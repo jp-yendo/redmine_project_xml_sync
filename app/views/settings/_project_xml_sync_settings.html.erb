@@ -1,0 +1,45 @@
+<%= content_tag :p do %>
+  <%= content_tag :label, t('.redmine_status_alias') %>
+  <%= text_field_tag 'settings[redmine_status_alias]', @settings[:redmine_status_alias] %>
+<% end %>
+<%= content_tag :p do %>
+  <%= content_tag :label, t('.redmine_id_alias') %>
+  <%= text_field_tag 'settings[redmine_id_alias]', @settings[:redmine_id_alias] %>
+<% end %>
+<%= content_tag :p do %>
+  <%= content_tag :label, t('.tracker_alias') %>
+  <%= text_field_tag 'settings[tracker_alias]', @settings[:tracker_alias] %>
+<% end %>
+<%= content_tag :fieldset, class: 'box' do %>
+  <%= content_tag :legend, t('.import_settings') %>
+  <%= loader_setting_checkbox(:import, :is_private_by_default) %>
+  <%= loader_setting_checkbox(:import, :sync_versions) %>
+  <%= content_tag :p do %>
+    <%= content_tag :label, t('.instant_import_tasks') %>
+    <%= number_field_tag 'settings[import][instant_import_tasks]', @settings[:import][:instant_import_tasks], in: 10..100, step: 5 %>
+  <% end %>
+  <%= content_tag :p do %>
+    <%= content_tag :label, t('.default_tracker') %>
+    <%= select_tag "settings[import][tracker_id]", options_from_collection_for_select(Tracker.all, :id, :name, selected: @settings[:import][:tracker_id]) %>
+  <% end %>
+  <%= content_tag :fieldset, class: 'box' do %>
+    <%= content_tag :legend, t('.ignore_fields') %>
+    <%= loader_setting_checkbox(:import, :ignore_fields, :estimated_hours) %>
+    <%= loader_setting_checkbox(:import, :ignore_fields, :spent_hours) %>
+    <%= loader_setting_checkbox(:import, :ignore_fields, :priority) %>
+    <%= loader_setting_checkbox(:import, :ignore_fields, :description) %>
+    <%= loader_setting_checkbox(:import, :ignore_fields, :done_ratio) %>
+  <% end %>
+<% end %>
+<%= content_tag :fieldset, class: 'box' do %>
+  <%= content_tag :legend, t('.export_settings') %>
+  <%= loader_setting_checkbox(:export, :sync_versions) %>
+  <%= content_tag :fieldset, class: 'box' do %>
+    <%= content_tag :legend, t('.ignore_fields') %>
+    <%= loader_setting_checkbox(:export, :ignore_fields, :estimated_hours) %>
+    <%= loader_setting_checkbox(:export, :ignore_fields, :spent_hours) %>
+    <%= loader_setting_checkbox(:export, :ignore_fields, :priority) %>
+    <%= loader_setting_checkbox(:export, :ignore_fields, :description) %>
+    <%= loader_setting_checkbox(:export, :ignore_fields, :done_ratio) %>
+  <% end %>
+<% end %>
