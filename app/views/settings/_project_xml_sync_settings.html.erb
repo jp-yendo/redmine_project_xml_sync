@@ -22,6 +22,10 @@
     <%= content_tag :label, t('.default_tracker') %>
     <%= select_tag "settings[import][tracker_id]", options_from_collection_for_select(Tracker.all, :id, :name, selected: @settings[:import][:tracker_id]) %>
   <% end %>
+  <%= content_tag :p do %>
+    <%= content_tag :label, t('.default_issue_status') %>
+    <%= select_tag "settings[import][issue_status_id]", options_from_collection_for_select(IssueStatus.all, :id, :name, selected: @settings[:import][:issue_status_id]) %>
+  <% end %>
   <%= content_tag :fieldset, class: 'box' do %>
     <%= content_tag :legend, t('.ignore_fields') %>
     <%= loader_setting_checkbox(:import, :ignore_fields, :estimated_hours) %>

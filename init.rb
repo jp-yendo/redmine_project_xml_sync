@@ -14,7 +14,7 @@ end
 Redmine::Plugin.register :redmine_project_xml_sync do
   name 'Redmine Project Xml Sync plugin'
   author 'Yuichiro Endo'
-  description 'OpenSource ProjectManagement software sync Redmine'
+  description 'Sync OpenSource ProjectManagement software for Redmine'
   version '0.0.1'
   url 'https://github.com/jp-yendo/redmine_project_xml_sync.git'
 

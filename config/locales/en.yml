@@ -43,7 +43,8 @@ en:
       redmine_id_alias: Alias for Redmine issue ID field
       redmine_status_alias: Alias for Redmine issue status
       instant_import_tasks: Max number of tasks to immediately import
-      default_tracker: Tracker for project files
+      default_tracker: Default Tracker
+      default_issue_status: Default Issue Status
       export_settings: Export settings
       import_settings: Import settings
       ignore_fields: Ignore fields

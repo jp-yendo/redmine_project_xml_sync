@@ -1,7 +1,7 @@
 <%= javascript_include_tag :project_xml_sync, plugin: 'redmine_project_xml_sync' %>
 <%= stylesheet_link_tag 'project_xml_sync', plugin: 'redmine_project_xml_sync' %>
 <h1><%= l(:import_tasks) %></h1>
-<%= form_for(:import, {url: project_loader_path, html: {id: 'import', multipart: true}}) do |f| %>
+<%= form_for(:import, :url => {:action => 'create'}, :method => :post, :html => {:id => 'import', :multipart => true}) do |f| %>
   <%= hidden_field_tag "hashed_name", @import.hashed_name %>
   <% if @import.tasks.any? %>
     <p><%= l(:about_analyzed) %></p>
@@ -29,7 +29,7 @@
           <%= label_tag :update_existing, t(:update_existing), {class: :update_existing} %>
         </td>
         <td align="right" colspan="10"><%= f.submit(l(:import_selected), {name: 'import[import_selected]'}) %></td>
-        <td><%= link_to(l(:back), new_project_loader_path) %></td>
+        <td><%= link_to(l(:back), :action => 'new') %></td>
       </tr>
     </table>
   <% end %>

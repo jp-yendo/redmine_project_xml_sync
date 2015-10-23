@@ -10,7 +10,7 @@ module Concerns::Import
       (fields - @ignore_fields[:import]).each do |field|
         eval("struct.#{field} = task[:#{field}]#{".try(:split, ', ')" if field.in?(%w(predecessors delays))}")
       end
-      struct.status_id ||= IssueStatus.default
+      struct.status_id ||= @settings[:import][:issue_status_id]
       struct.done_ratio ||= 0
       tasks_to_import[index.to_i] = struct
     end
@@ -29,7 +29,7 @@ module Concerns::Import
     tracker_field = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[Alias='#{@settings[:tracker_alias]}']/FieldID").try(:text).try(:to_i)
     issue_rid = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[Alias='#{@settings[:redmine_id_alias]}']/FieldID").try(:text).try(:to_i)
     redmine_task_status = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[Alias='#{@settings[:redmine_status_alias]}']/FieldID").try(:text).try(:to_i)
-    default_issue_status_id = IssueStatus.default.id
+    default_issue_status_id = @settings[:import][:issue_status_id]
 
     doc.xpath('Project/Tasks/Task').each do |task|
       begin

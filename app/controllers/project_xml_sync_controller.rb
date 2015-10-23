@@ -49,7 +49,7 @@ class ProjectXmlSyncController < ApplicationController
       lines = error.message.split("\n")
       flash[:error] = l(:failed_read) + lines.to_s
     end
-    redirect_to new_project_loader_path if flash[:error]
+    redirect_to :action => "new" if flash[:error]
   end
 
   def create
@@ -72,7 +72,7 @@ class ProjectXmlSyncController < ApplicationController
     import_name = params[:hashed_name]
 
     if flash[:error]
-      redirect_to new_project_loader_path # interrupt if any errors
+      redirect_to :action => "new" # interrupt if any errors
       return
     end
 
@@ -114,12 +114,18 @@ class ProjectXmlSyncController < ApplicationController
       logger.debug "DEBUG: Unable to import tasks: #{ error }"
     end
 
-    redirect_to new_project_loader_path
+    redirect_to :action => "new"
   end
 
   def export
-    xml, name = generate_xml
-    send_data xml, filename: name, disposition: :attachment
+    begin
+      xml, name = generate_xml
+      send_data xml, filename: name, disposition: :attachment
+    rescue => error
+      flash[:error] = "export task error: " + error.to_s
+      logger.debug "DEBUG: export task error: #{ error }"
+      redirect_to :action => "new"
+    end
   end
 
   private
@@ -129,11 +135,17 @@ class ProjectXmlSyncController < ApplicationController
   end
 
   def get_sorted_query
+Rails.logger.info("------ Watch 001")
     retrieve_query
+Rails.logger.info("------ Watch 002")
     sort_init(@query.sort_criteria.empty? ? [['id', 'desc']] : @query.sort_criteria)
+Rails.logger.info("------ Watch 003")
     sort_update(@query.sortable_columns)
+Rails.logger.info("------ Watch 004")
     @query.sort_criteria = sort_criteria.to_a
+Rails.logger.info("------ Watch 005")
     @query_issues = @query.issues(include: [:assigned_to, :tracker, :priority, :fixed_version], order: sort_clause)
+Rails.logger.info("------ Watch 006")
   end
 
   def get_plugin_settings

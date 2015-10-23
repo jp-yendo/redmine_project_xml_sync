@@ -5,7 +5,7 @@ module Concerns::Export
   def generate_xml
     @uid = 1
     request_from = Rails.application.routes.recognize_path(request.referrer)
-    get_sorted_query unless request_from[:controller] =~ /project_xml_sync/
+    #get_sorted_query unless request_from[:controller] =~ /project_xml_sync/
     @resource_id_to_uid = {}
     @task_id_to_uid = {}
     @version_id_to_uid = {}
