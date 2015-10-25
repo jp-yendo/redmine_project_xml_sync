@@ -2,15 +2,15 @@ class ProjectXmlSyncController < ApplicationController
   unloadable
   require 'rexml/document'
   require 'date'
-  
+
   before_filter :find_project, :only => [:index, :analyze, :import_results, :export]
-  
+
   include ProjectXmlSyncHelper
-  
+
   def index
     flash.clear
-  end 
-  
+  end
+
   def analyze
     flash.clear
     if params[:do_import].nil?
@@ -18,7 +18,7 @@ class ProjectXmlSyncController < ApplicationController
     else
       do_import = params[:do_import]
     end
-    
+
     @resources  = []
     @tasks      = []
     @assignments= []
@@ -40,7 +40,7 @@ class ProjectXmlSyncController < ApplicationController
     doc = REXML::Document.new(content)
 
     root = doc.root
-      
+
     @prefix="MS Project Import(#{Date.today}): "
 
     doc.elements.each('Project') do |ele|
@@ -48,10 +48,10 @@ class ProjectXmlSyncController < ApplicationController
       if tmp_title.nil?
         @title = "MSProjectImport_#{User.current}:#{Date.today}"
         flash[:warning] = "No Titel in XML found. I use #{@title} instead!"
-        #@title = ele.elements["Name"].text if ele.elements["Name"] 
+        #@title = ele.elements["Name"].text if ele.elements["Name"]
       else
         @title = @prefix + tmp_title
-      end        
+      end
 
       ele.each_element('//Resource') do |child|
         @resources.push(xml_resources child)
@@ -62,33 +62,33 @@ class ProjectXmlSyncController < ApplicationController
       ele.each_element('//Assignment') do |child|
         assign = MsprojAssignment.new(child)
         if assign.resource_uid >= 0
-          resource_uids.push(assign.resource_uid) 
+          resource_uids.push(assign.resource_uid)
           @assignments.push(assign)
-        end         
+        end
       end
-      
+
       @usermapping = []
-      
+
       @member_uids = @project.members.map { |x| x.user_id}
-      
+
       resource_uids.uniq.each do |resource_uid|
         resource = @resources.select { |res| res.uid == resource_uid }.first
-        
+
         unless resource.nil?
           user = resource.map_user(@member_uids)
           logger.info("Name: #{resource.name} Res_ID #{resource_uid} USER: #{user}")
           logger.info("\n -----------INFO: #{resource.info} Status: #{resource.status}")
-          unless user.nil?             
+          unless user.nil?
             @usermapping.push([resource_uid,resource.name, user, resource.status])
           end
         end
         #logger.debug("Mapping Resource: #{resource} UserMapping: #{@usermapping}")
         @no_mapping_found=@usermapping.select { |id, name, user_obj, status| status.to_i > 2}.count
         unless @no_mapping_found == 0
-          flash[:error] = "Error: #{l(:no_failed_mapping, @no_mapping_found)}"  
+          flash[:error] = "Error: #{l(:no_failed_mapping, @no_mapping_found)}"
         end
       end
-            
+
       # check for required custom_fields
       @project.all_issue_custom_fields.each do |custom_field|
         if custom_field.is_required
@@ -100,8 +100,7 @@ class ProjectXmlSyncController < ApplicationController
       ele.each_element('//Task') do |child|
         @tasks.push(xml_tasks child)
       end
-      
-    end 
+    end
 #    redirect_to :action => 'upload'
 
     flash[:notice] = "Project successful parsed" if flash.empty?
@@ -112,44 +111,43 @@ class ProjectXmlSyncController < ApplicationController
   end
 
   def import_results
-    
+
   end
-  
+
 private
   def find_project
     @project = Project.find(params[:project_id])
   end
 
   def insert
-    logger.info "Start insert..." 
-    
+    logger.info "Start insert..."
+
     last_task_id = 0
     parent_id = 0
     root_task_id = 0
     last_outline_level = 0
     parent_stack = Array.new #contains a LIFO-stack of parent task
-        
+
     @tasks.each do |task|
-      begin              
+      begin
       issue = Issue.new(
         :author   => User.current,
         :project  => @project
         )
       issue.status_id = 1   # 1-neu
-      issue.tracker_id = Setting.plugin_msproject_import['tracker_default']  # 1-Bug, 2-Feature...
-      
+      issue.tracker_id = Setting.plugin_msproject_import['tracker_default']  # 1-Bug, 2-Feature
+
       if task.task_id > 0
         issue.subject = task.name
         assign=@assignments.select{|as| as.task_uid == task.task_id}.first
-        unless assign.nil? 
+        unless assign.nil?
           logger.info("Assign: #{assign}")
           mapped_user=@usermapping.select { |id, name, user_obj, status| id == assign.resource_uid and status < 3}.first
           logger.info("Mapped User: #{mapped_user}")
           issue.assigned_to_id  = mapped_user[2].id unless mapped_user.nil?
-          
         end
       else
-        issue.subject = @title              
+        issue.subject = @title
       end
 
       issue.start_date = task.start_date
@@ -158,24 +156,24 @@ private
       issue.created_on = task.create_date
       issue.estimated_hours = task.duration
       issue.priority_id = task.priority_id
-      issue.done_ratio = task.done_ratio     
+      issue.done_ratio = task.done_ratio
       issue.description = task.notes
 
-      # subtask?      
-      
+      # subtask?
+
       if task.outline_level > 0
         issue.root_id = root_task_id
         if task.outline_level > last_outline_level # new subtask
-          parent_id = last_task_id           
-          parent_stack.push(parent_id)          
+          parent_id = last_task_id
+          parent_stack.push(parent_id)
         end
 
         if task.outline_level < last_outline_level # step back in hierachy
           steps=last_outline_level-task.outline_level
-          parent_stack.pop(steps)  
+          parent_stack.pop(steps)
           parent_id=parent_stack.last
-        end 
-        
+        end
+
         if !parent_id.nil? && parent_id > 0
           issue.parent_id = parent_id
         else
@@ -184,25 +182,25 @@ private
       end
 
       last_outline_level = task.outline_level
-      
+
       # required custom fields:
       update_custom_fields(issue, @required_custom_fields)
-                        
-      if issue.save        
+
+      if issue.save
         last_task_id = issue.id
         root_task_id = issue.id if root_task_id == 0
-        logger.info "New issue #{task.name} in Project: #{@project} created!" 
-        flash[:notice] = "Project successful inserted!"        
+        logger.info "New issue #{task.name} in Project: #{@project} created!"
+        flash[:notice] = "Project successful inserted!"
       else
         iss_error = issue.errors.full_messages
         logger.info "Issue #{task.name} in Project: #{@project} gives Error: #{iss_error}"
         flash[:error] = "Error: #{iss_error}"
-        return   
+        return
       end
-                 
+
       rescue Exception => ex
-        flash[:error] = "Error: #{ex.to_s}" 
-      return
+        flash[:error] = "Error: #{ex.to_s}"
+        return
       end
     end
 
