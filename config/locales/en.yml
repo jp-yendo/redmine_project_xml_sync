@@ -1,42 +1,26 @@
 en:
-  menu_caption: MS Project
-  import_tasks: Import tasks
-  import_selected: Import selected tasks
-  export_tasks: Export tasks
-  analyze: Analyze
-  analyzing: Analyzing...
-  import: Import?
-  back: Back
-  name: Name
-  tracker: Tracker
-  start_date: Start date
-  end_date: End date
-  priority: Priority
-  assigned_to: Assigned to
-  requires: Predecessors
-  export_issue: Export Issue
-  field_spent_hours: Spent hours
-  field_sync_versions: Sync versions
-  field_is_private_by_default: Mark issues as private by default
-  update_existing: Update existing
-  about_analyzed: The tasks found in the file are listed below. Only items with a ticked check box next to them will be imported. Once happy with your selection, use the  "Import selected issues" button to begin the import process. To abandon the import, use the "Back" link.
-  no_tasks_were_selected: No tasks were selected for import. Please select at least one task and try again.
-  no_valid_default_tracker: No valid default Tracker. Please ask your System Administrator to resolve this.
-  tasks_read_successfully: Tasks read successfully. Please choose items to import.
-  no_tasks_found: No usable tasks were found in file
-  failed_read: 'Failed to read file: '
-  choose_file_warning: Please choose a file before using the 'Analyse' button.
-  unable_import: 'Unable to import tasks: '
-  imported_successfully: 'Imported successfully tasks: '
-  generate_xml: Generate a XML file to export all our Redmine issues to MS Project.
-  warning_text: <strong>Warning!</strong> Some task names are identical. You need to rename them if importing. If you see any errors - you may have missed one.
-  your_tasks_being_imported: Your tasks being imported as soon as possible. You will receive email notification.
-  subject: 'Your tasks were imported to project '
-  congrats: Congrats, your tasks
-  were_imported: were successfully imported to project
-  can_find_html: You can find it %{link}
-  here: here
-  duplicates_warning: 'Tasks with UIDs: %{ids} cannot be processed. Please, check it.'
+  menu_caption: "XML Import/Export"
+
+  import_tasks: "Import tasks"
+  export_tasks: "Export tasks"
+  button_import: "Import"
+  button_export: "Export"
+
+#  project_title: "Name of the Project"
+#  resources_tag: "Resources"
+#  task_tag: "Tasks"
+#  assignment_tag: "Assignment"
+#  button_analyze: "Analyze"
+#  assignedto_auto: "Will assigned to"
+#  assignedto_manuel: "Assign to other Member of Project"
+#  xml_assignment:   "Assignment in MS Project"
+#  user_imp_status_1: "User found."
+#  user_imp_status_2: "User not Member of Project."
+#  user_imp_status_3: "User not found."
+#  no_failed_mapping: "%{count} Users missing or not in project! Please resolve manually."
+#  settings_tracker_caption: "Default Tracker"
+#  settings_tracker_help:  "This is the default Tracker all imported tasks will get."
+
   settings:
     project_xml_sync_settings:
       tracker_alias: Alias for Tracker field
@@ -48,3 +32,35 @@ en:
       export_settings: Export settings
       import_settings: Import settings
       ignore_fields: Ignore fields
+
+#  import_selected: Import selected tasks
+#  import: Import?
+#  back: Back
+#  name: Name
+#  tracker: Tracker
+#  start_date: Start date
+#  end_date: End date
+#  priority: Priority
+#  assigned_to: Assigned to
+#  requires: Predecessors
+#  field_spent_hours: Spent hours
+#  field_sync_versions: Sync versions
+#  field_is_private_by_default: Mark issues as private by default
+#  update_existing: Update existing
+#  about_analyzed: The tasks found in the file are listed below. Only items with a ticked check box next to them will be imported. Once happy with your selection, use the  "Import selected issues" button to begin the import process. To abandon the import, use the "Back" link.
+#  no_tasks_were_selected: No tasks were selected for import. Please select at least one task and try again.
+#  no_valid_default_tracker: No valid default Tracker. Please ask your System Administrator to resolve this.
+#  tasks_read_successfully: Tasks read successfully. Please choose items to import.
+#  no_tasks_found: No usable tasks were found in file
+#  failed_read: 'Failed to read file: '
+#  choose_file_warning: Please choose a file before using the 'Analyse' button.
+#  unable_import: 'Unable to import tasks: '
+#  imported_successfully: 'Imported successfully tasks: '
+#  warning_text: <strong>Warning!</strong> Some task names are identical. You need to rename them if importing. If you see any errors - you may have missed one.
+#  your_tasks_being_imported: Your tasks being imported as soon as possible. You will receive email notification.
+#  subject: 'Your tasks were imported to project '
+#  congrats: Congrats, your tasks
+#  were_imported: were successfully imported to project
+#  can_find_html: You can find it %{link}
+#  here: here
+#  duplicates_warning: 'Tasks with UIDs: %{ids} cannot be processed. Please, check it.'

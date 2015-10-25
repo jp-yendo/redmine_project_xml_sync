@@ -1,16 +1,3 @@
-require 'redmine'
-
-require_dependency 'string'
-require_dependency 'element'
-require_dependency 'views_issues_index_bottom_hook'
-
-ActionDispatch::Callbacks.to_prepare do
-  SettingsHelper.__send__(:include, SettingsHelperPatch)
-  Mailer.__send__(:include, ProjectXmlSyncMailer)
-  Issue.__send__(:include, IssuePatch)
-  Redmine::Views::OtherFormatsBuilder.__send__(:include, ProjectXmlSyncOtherFormatsBuilder)
-end
-
 Redmine::Plugin.register :redmine_project_xml_sync do
   name 'Redmine Project Xml Sync plugin'
   author 'Yuichiro Endo'
@@ -35,9 +22,9 @@ Redmine::Plugin.register :redmine_project_xml_sync do
 	    is_private_by_default: false,
 	    instant_import_tasks: 10,
 	    sync_versions: false,
-	    tracker_alias: 'Tracker',
+	    tracker_alias: 'TRACKER',
       redmine_id_alias: 'RID',
-      redmine_status_alias: 'Status',
+      redmine_status_alias: 'RSTATUS',
       ignore_fields: {
         description: false,
         priority: false,
@@ -48,16 +35,11 @@ Redmine::Plugin.register :redmine_project_xml_sync do
     },
   }, partial: 'settings/project_xml_sync_settings'
 
-
   project_module :project_xml_sync do
-    permission :import_issues_from_xml, project_xml_sync: [:new, :create]
-    permission :export_issues_to_xml, project_xml_sync: :export
+    permission :import_issues_from_xml, project_xml_sync: [:index, :analyze, :import_results]
+    permission :export_issues_to_xml, project_xml_sync: [:index, :export]
   end
 
-  menu :project_menu, :project_xml_sync, { controller: :project_xml_sync, action: :new },
+  menu :project_menu, :project_xml_sync, { controller: :project_xml_sync, action: :index },
     caption: :menu_caption, after: :new_issue, param: :project_id
-
-  Time::DATE_FORMATS.merge!(
-    ms_xml: lambda{ |time| time.strftime("%Y-%m-%dT%H:%M:%S") }
-  )
 end

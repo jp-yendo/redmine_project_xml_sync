@@ -1,0 +1,35 @@
+<h2>Ms Project Import plugin - Results:</h2> 
+<% issue = Issue.where(:id => params[:root_task]).first %>
+Alle Aufgaben wurden importiert unter: <%= link_to "#{issue.subject}(#{issue.id})", { :controller => "issues", :action => "show", :id => issue} %>
+
+<h2>Details for <%= @project.name %>:</h2>
+<p>
+	<b><%= l(:project_title)%>:</b> <%= @title %>
+</p>
+<p>
+  <h3>Imported Tasks:</h3>
+  <% issues = Issue.where(:root_id => params[:root_task]) %>
+  <table class="list">
+          <tr>
+                  <th><%= l(:task_tag)%></th>
+                  <th>assigned to</th>
+                  <th>Info</th>
+          </tr>
+          <%
+          issues.each do |task|
+                  if task.assigned_to_id.nil? || task.assigned_to_id == 0
+                          user="Not assigned!"
+                          css_td="warning"
+                  else
+                          css_td="success"
+                          user=User.find(task.assigned_to_id)
+                  end
+          %>
+          <tr class="issue idnt idnt-<%=issue_deep(task)%>">
+                  <td class="subject"><%= link_to "#{task.subject}(#{task.id})", { :controller => "issues", :action => "show", :id => task} %></td>
+                  <td class="assigned_to <%=css_td%>"><%= user%></td>
+                  <td></td>
+          </tr>
+          <%end%>
+  </table>
+</p>

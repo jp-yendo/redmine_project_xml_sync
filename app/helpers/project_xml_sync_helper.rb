@@ -1,41 +1,84 @@
 module ProjectXmlSyncHelper
-  def loader_user_select_tag(project, assigned_to, index)
-    select_tag "import[tasks][#{index}][assigned_to]", options_from_collection_for_select(project.assignable_users, :id, :name, assigned_to ), { include_blank: true }
+  def issue_deep(issue)
+	  @cnt_deep=0
+	  if issue.parent_id.nil?
+		   return @cnt_deep
+		else
+		 parent=Issue.find(issue.parent_id)
+		 @cnt_deep=1 + issue_deep(parent)
+	  end
   end
 
-  def loader_tracker_select_tag(project, tracker_name, index)
-    tracker_id = if map_trackers.has_key?(tracker_name)
-                   map_trackers[tracker_name]
-                 else
-                   @settings[:import][:tracker_id]
-                 end
-    select_tag "import[tasks][#{index}][tracker_id]", options_from_collection_for_select(project.trackers, :id, :name, tracker_id)
+  def xml_resources resources
+      resource = MsprojResource.new
+      id = resources.elements['UID']
+      resource.uid = id.text.to_i if id
+      name = resources.elements['Name']
+      resource.name = name.text if name
+      return resource    
+  end
+  
+  def create_custom_fields
+    IssueCustomField.create(:name => "MS Project WDS", :field_format => 'string') #Beispiel    
+  end
+  
+  def update_custom_fields(issue, fields)
+    f_id = Hash.new { |hash, key| hash[key] = nil }
+    issue.available_custom_fields.each_with_index.map { |f,indx| f_id[f.name] = f.id }
+    field_list = []
+    fields.each do |name, value|
+      field_id = f_id[name].to_s
+      field_list << Hash[field_id, value]
+    end
+    issue.custom_field_values = field_list.reduce({},:merge)
+
   end
 
-  def loader_percent_select_tag(task_percent, index)
-    select_tag "import[tasks][#{index}][percentcomplete]", options_for_select((0..10).to_a.map {|p| (p*10)}, task_percent.to_i)
-  end
-
-  def loader_priority_select_tag(task_priority, index)
-    priority_name = case task_priority.to_i
-               when 0..200 then 'Minimal'
-               when 201..400 then 'Low'
-               when 401..600 then 'Normal'
-               when 601..800 then 'High'
-               when 801..1000 then 'Immediate'
-               end
-    select_tag "import[tasks][#{index}][priority]", options_from_collection_for_select(IssuePriority.active, :id, :name, priority_name)
-  end
-
-  def ignore_field?(field, way)
-    field.to_s.in?(@ignore_fields.send(:fetch, way.to_sym))
-  end
-
-  def duplicate_index task_subject
-    @duplicates.index(task_subject).next if task_subject.in?(@duplicates)
-  end
-
-  def map_trackers
-    @map_trackers ||= Hash[@project.trackers.map { |tracker| [tracker.name, tracker.id] }]
+  def xml_tasks tasks
+      task = MsprojTask.new
+      task.task_id = tasks.elements['ID'].text.to_i
+      task.wbs = tasks.elements['WBS'].text
+#      task.outline_number = tasks.elements['OutlineNumber'].text
+      task.outline_level = tasks.elements['OutlineLevel'].text.to_i
+      
+      name = tasks.elements['Name']
+      task.name = name.text if name
+      date = Date.new
+      start_date = tasks.elements['Start']
+      task.start_date = start_date.text.split('T')[0] if start_date
+      
+      finish_date = tasks.elements['Finish']
+      task.finish_date = finish_date.text.split('T')[0] if finish_date
+      
+      create_date = tasks.elements['CreateDate']
+      date_time = create_date.text.split('T')
+      task.create_date = date_time[0] + ' ' + date_time[1] if start_date
+      #task.create = name ? !(has_task(name.text)) : true
+      duration_arr = tasks.elements["Duration"].text.split("H")
+      task.duration = duration_arr[0][2..duration_arr[0].size-1]         
+      task.done_ratio = tasks.elements["PercentComplete"].text if tasks.elements["PercentComplete"]
+      task.outline_level = tasks.elements["OutlineLevel"].text.to_i  
+      priority = tasks.elements["Priority"].text
+      if priority == "500"
+              task.priority_id = 2  #normal
+      elsif priority < "500"
+              task.priority_id = 1  #niedrig
+      elsif priority < "750"
+              task.priority_id = 3  #hoch
+      elsif priority < "1000"
+              task.priority_id = 4  #dringend
+      else
+              task.priority_id = 5  #sofort
+      end   
+      task.notes=tasks.elements["Notes"].text if tasks.elements["Notes"]
+    return task
+  end rescue raise 'parse error'
+  
+private
+  def has_task name, issues
+    issues.each do |issue|
+      return true if issue.subject == name
+    end
+    false
   end
 end

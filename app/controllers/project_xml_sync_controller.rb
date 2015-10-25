@@ -1,168 +1,211 @@
 class ProjectXmlSyncController < ApplicationController
-
   unloadable
-
-  before_filter :find_project, :get_plugin_settings, only: [:analyze, :new, :create, :export]
-  before_filter :authorize, except: :analyze
-  before_filter :get_import_settings, only: [:analyze, :create]
-  before_filter :get_export_settings, only: :export
-
-  include Concerns::Import
-  include Concerns::Export
-  include QueriesHelper
-  include SortHelper
-
-  require 'zlib'
-  require 'tempfile'
-  require 'nokogiri'
-
-  # This allows to update the existing task in Redmine from MS Project
-  ActiveRecord::Base.lock_optimistically = false
-
-  def new
-  end
-
+  require 'rexml/document'
+  require 'date'
+  
+  before_filter :find_project, :only => [:index, :analyze, :import_results, :export]
+  
+  include ProjectXmlSyncHelper
+  
+  def index
+    flash.clear
+  end 
+  
   def analyze
-    begin
-      xmlfile = params[:import][:xmlfile].try(:tempfile)
-      if xmlfile
-        @import = Import.new
+    flash.clear
+    if params[:do_import].nil?
+      do_import = 'false'
+    else
+      do_import = params[:do_import]
+    end
+    
+    @resources  = []
+    @tasks      = []
+    @assignments= []
+    @required_custom_fields=[]
 
-        byte = xmlfile.getc
-        xmlfile.rewind
+    if do_import == 'true'
+      @upload_path = params[:upload_path]
+      logger.info "start import from #{@upload_path}"
+    else
+      upload  = params[:uploaded_file]
+      @upload_path = upload.path
+      logger.info "upload xml file: #{upload.class.name}: #{upload.inspect} : #{upload.original_filename} : uploaded_path: #{@upload_path}"
+    end
 
-        xmlfile = Zlib::GzipReader.new xmlfile unless byte == '<'[0]
-        File.open(xmlfile, 'r') do |readxml|
-          @import.hashed_name = (File.basename(xmlfile, File.extname(xmlfile)) + Time.now.to_s).hash.abs
-          xmldoc = Nokogiri::XML::Document.parse(readxml).remove_namespaces!
-          @import.tasks = get_tasks_from_xml(xmldoc)
-        end
+    content = File.read(@upload_path)
 
-        subjects = @import.tasks.map(&:subject)
-        @duplicates = subjects.select{ |subj| subjects.count(subj) > 1 }.uniq
+    #logger.info content
 
-        flash[:notice] = l(:tasks_read_successfully)
+    doc = REXML::Document.new(content)
+
+    root = doc.root
+      
+    @prefix="MS Project Import(#{Date.today}): "
+
+    doc.elements.each('Project') do |ele|
+      tmp_title = ele.elements['Title'].text if ele.elements['Title']
+      if tmp_title.nil?
+        @title = "MSProjectImport_#{User.current}:#{Date.today}"
+        flash[:warning] = "No Titel in XML found. I use #{@title} instead!"
+        #@title = ele.elements["Name"].text if ele.elements["Name"] 
       else
-        flash[:error] = l(:choose_file_warning)
+        @title = @prefix + tmp_title
+      end        
+
+      ele.each_element('//Resource') do |child|
+        @resources.push(xml_resources child)
+#        render :text => "Resource name is: " + child.elements["Name"].text
       end
-    rescue => error
-      lines = error.message.split("\n")
-      flash[:error] = l(:failed_read) + lines.to_s
-    end
-    redirect_to :action => "new" if flash[:error]
-  end
 
-  def create
-    default_tracker_id = @settings[:import][:tracker_id]
-    tasks_per_time = @settings[:import][:instant_import_tasks].to_i
-    import_versions = @settings[:import][:sync_versions] == '1'
-    tasks = params[:import][:tasks].select { |index, task_info| task_info[:import] == '1' }
-    update_existing = params[:update_existing]
-
-    flash[:error] = l(:choose_file_warning) unless tasks
-
-    tasks_to_import = build_tasks_to_import tasks
-
-    flash[:error] = l(:no_tasks_were_selected) if tasks_to_import.empty?
-
-    user = User.current
-    date = Date.today.strftime
-
-    flash[:error] = l(:no_valid_default_tracker) unless default_tracker_id
-    import_name = params[:hashed_name]
-
-    if flash[:error]
-      redirect_to :action => "new" # interrupt if any errors
-      return
-    end
-
-    # Right, good to go! Do the import.
-    begin
-      milestones = tasks_to_import.select { |task| task.milestone == '1' }
-      issues = tasks_to_import - milestones
-      issues_info = tasks_to_import.map { |issue| {title: issue.subject, uid: issue.uid, outlinenumber: issue.outlinenumber, predecessors: issue.predecessors} }
-
-      if tasks_to_import.size <= tasks_per_time
-        uid_to_issue_id, outlinenumber_to_issue_id = Import.import_tasks(tasks_to_import, @project.id, user, nil, update_existing, import_versions)
-        Import.map_subtasks_and_parents(issues_info, @project.id, nil, uid_to_issue_id, outlinenumber_to_issue_id)
-        Import.map_versions_and_relations(milestones, issues, @project.id, nil, import_versions, uid_to_issue_id)
-
-        flash[:notice] = l(:imported_successfully) + issues.count.to_s
-        redirect_to project_issues_path(@project)
-        return
-      else
-        tasks_to_import.each_slice(tasks_per_time).each do |batch|
-          Import.delay(queue: import_name, priority: 1).import_tasks(batch, @project.id, user, import_name, update_existing, import_versions)
-        end
-
-        issues_info.each_slice(50).each do |batch|
-          Import.delay(queue: import_name, priority: 3).map_subtasks_and_parents(batch, @project.id, import_name)
-        end
-
-        issues.each_slice(tasks_per_time).each do |batch|
-          Import.delay(queue: import_name, priority: 4).map_versions_and_relations(milestones, batch, @project.id, import_name, import_versions)
-        end
-
-        Mailer.delay(queue: import_name, priority: 5).notify_about_import(user, @project, date, issues_info) # send notification that import finished
-
-        Import.delay(queue: import_name, priority: 10).clean_up(import_name)
-
-        flash[:notice] = t(:your_tasks_being_imported)
+      resource_uids = []
+      ele.each_element('//Assignment') do |child|
+        assign = MsprojAssignment.new(child)
+        if assign.resource_uid >= 0
+          resource_uids.push(assign.resource_uid) 
+          @assignments.push(assign)
+        end         
       end
-    rescue => error
-      flash[:error] = l(:unable_import) + error.to_s
-      logger.debug "DEBUG: Unable to import tasks: #{ error }"
-    end
+      
+      @usermapping = []
+      
+      @member_uids = @project.members.map { |x| x.user_id}
+      
+      resource_uids.uniq.each do |resource_uid|
+        resource = @resources.select { |res| res.uid == resource_uid }.first
+        
+        unless resource.nil?
+          user = resource.map_user(@member_uids)
+          logger.info("Name: #{resource.name} Res_ID #{resource_uid} USER: #{user}")
+          logger.info("\n -----------INFO: #{resource.info} Status: #{resource.status}")
+          unless user.nil?             
+            @usermapping.push([resource_uid,resource.name, user, resource.status])
+          end
+        end
+        #logger.debug("Mapping Resource: #{resource} UserMapping: #{@usermapping}")
+        @no_mapping_found=@usermapping.select { |id, name, user_obj, status| status.to_i > 2}.count
+        unless @no_mapping_found == 0
+          flash[:error] = "Error: #{l(:no_failed_mapping, @no_mapping_found)}"  
+        end
+      end
+            
+      # check for required custom_fields
+      @project.all_issue_custom_fields.each do |custom_field|
+        if custom_field.is_required
+          flash[:warning] = "Required custom field #{custom_field.name} found. We will set them to 'n.a'"
+          @required_custom_fields.push([custom_field.name,'n.a.'])
+        end
+      end
 
-    redirect_to :action => "new"
+      ele.each_element('//Task') do |child|
+        @tasks.push(xml_tasks child)
+      end
+      
+    end 
+#    redirect_to :action => 'upload'
+
+    flash[:notice] = "Project successful parsed" if flash.empty?
+
+    if do_import == 'true'
+      insert
+    end
   end
 
-  def export
-    begin
-      xml, name = generate_xml
-      send_data xml, filename: name, disposition: :attachment
-    rescue => error
-      flash[:error] = "export task error: " + error.to_s
-      logger.debug "DEBUG: export task error: #{ error }"
-      redirect_to :action => "new"
-    end
+  def import_results
+    
   end
-
-  private
-
+  
+private
   def find_project
     @project = Project.find(params[:project_id])
   end
 
-  def get_sorted_query
-Rails.logger.info("------ Watch 001")
-    retrieve_query
-Rails.logger.info("------ Watch 002")
-    sort_init(@query.sort_criteria.empty? ? [['id', 'desc']] : @query.sort_criteria)
-Rails.logger.info("------ Watch 003")
-    sort_update(@query.sortable_columns)
-Rails.logger.info("------ Watch 004")
-    @query.sort_criteria = sort_criteria.to_a
-Rails.logger.info("------ Watch 005")
-    @query_issues = @query.issues(include: [:assigned_to, :tracker, :priority, :fixed_version], order: sort_clause)
-Rails.logger.info("------ Watch 006")
-  end
+  def insert
+    logger.info "Start insert..." 
+    
+    last_task_id = 0
+    parent_id = 0
+    root_task_id = 0
+    last_outline_level = 0
+    parent_stack = Array.new #contains a LIFO-stack of parent task
+        
+    @tasks.each do |task|
+      begin              
+      issue = Issue.new(
+        :author   => User.current,
+        :project  => @project
+        )
+      issue.status_id = 1   # 1-neu
+      issue.tracker_id = Setting.plugin_msproject_import['tracker_default']  # 1-Bug, 2-Feature...
+      
+      if task.task_id > 0
+        issue.subject = task.name
+        assign=@assignments.select{|as| as.task_uid == task.task_id}.first
+        unless assign.nil? 
+          logger.info("Assign: #{assign}")
+          mapped_user=@usermapping.select { |id, name, user_obj, status| id == assign.resource_uid and status < 3}.first
+          logger.info("Mapped User: #{mapped_user}")
+          issue.assigned_to_id  = mapped_user[2].id unless mapped_user.nil?
+          
+        end
+      else
+        issue.subject = @title              
+      end
 
-  def get_plugin_settings
-    @settings ||= Setting.plugin_redmine_project_xml_sync
-  end
+      issue.start_date = task.start_date
+      issue.due_date = task.finish_date
+      issue.updated_on = task.create_date
+      issue.created_on = task.create_date
+      issue.estimated_hours = task.duration
+      issue.priority_id = task.priority_id
+      issue.done_ratio = task.done_ratio     
+      issue.description = task.notes
 
-  def get_import_settings
-    @is_private_by_default = @settings[:import][:is_private_by_default] == '1'
-    get_ignore_fields(:import)
-  end
+      # subtask?      
+      
+      if task.outline_level > 0
+        issue.root_id = root_task_id
+        if task.outline_level > last_outline_level # new subtask
+          parent_id = last_task_id           
+          parent_stack.push(parent_id)          
+        end
 
-  def get_export_settings
-    @export_versions = @settings[:export][:sync_versions] == '1'
-    get_ignore_fields(:export)
-  end
+        if task.outline_level < last_outline_level # step back in hierachy
+          steps=last_outline_level-task.outline_level
+          parent_stack.pop(steps)  
+          parent_id=parent_stack.last
+        end 
+        
+        if !parent_id.nil? && parent_id > 0
+          issue.parent_id = parent_id
+        else
+          issue.parent_id = nil
+        end
+      end
 
-  def get_ignore_fields(way)
-    @ignore_fields = { way.to_sym => @settings[way.to_sym][:ignore_fields].select { |attr, val| val == '1' }.keys }
+      last_outline_level = task.outline_level
+      
+      # required custom fields:
+      update_custom_fields(issue, @required_custom_fields)
+                        
+      if issue.save        
+        last_task_id = issue.id
+        root_task_id = issue.id if root_task_id == 0
+        logger.info "New issue #{task.name} in Project: #{@project} created!" 
+        flash[:notice] = "Project successful inserted!"        
+      else
+        iss_error = issue.errors.full_messages
+        logger.info "Issue #{task.name} in Project: #{@project} gives Error: #{iss_error}"
+        flash[:error] = "Error: #{iss_error}"
+        return   
+      end
+                 
+      rescue Exception => ex
+        flash[:error] = "Error: #{ex.to_s}" 
+      return
+      end
+    end
+
+    redirect_to :action => 'import_results', :project_id => @project, :root_task => root_task_id
   end
 end

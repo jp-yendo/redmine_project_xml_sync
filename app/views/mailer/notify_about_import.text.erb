@@ -1,9 +1,0 @@
-<%= l(:congrats) %>
-
-  <% @issues.each do |issue| -%>
-    #<%= issue[:title] %>
-  <% end -%>
-
-<%= l(:were_imported) %> <%= @project.name %>.
-
-<%= l(:can_find_html, :link => nil) %><%= l(:here) %> <%= @issues_url %>

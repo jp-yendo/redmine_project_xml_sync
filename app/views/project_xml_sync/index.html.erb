@@ -1,0 +1,18 @@
+<%= stylesheet_link_tag 'project_xml_sync', plugin: 'redmine_project_xml_sync' %>
+<div class='left half'>
+  <h1><%= l(:import_tasks) %></h1>
+  <%= form_for(:import, :url => {:action => 'analyze'}, :method => :post, :html => {:id => 'import', :multipart => true}) do |f| %>
+    <%= render partial: 'about_import' %>
+    <%= f.file_field 'uploaded_file', accept: 'application/xml' %>
+    <tr>
+      <%= f.submit(l(:button_analyze)) %>
+    </tr>
+  <% end %>
+</div>
+<div class='right half'>
+  <h1><%= l(:export_tasks) %></h1>
+  <%= form_for(:import, :url => {:action => 'export'}, :method => :get, :html => {:id => 'export', :multipart => true}) do |f| %>
+    <%= render partial: 'about_export' %>
+    <%= f.submit(l(:button_export)) %>
+  <% end %>
+</div>
