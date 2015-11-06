@@ -23,8 +23,8 @@ class ProjectXmlSyncController < ApplicationController
     if do_import == 'true'
       @upload_path = params[:upload_path]
       Rails.logger.info "start import from #{@upload_path}"
-      message, @title, @usermapping, @assignments, @tasks, root_task_id = ProjectXmlImport.import(@project, @upload_path)
-      redirect_to :action => 'import_results', :project_id => @project, :root_task => root_task_id
+      message, @title, @usermapping, @assignments, @tasks, root_ids = ProjectXmlImport.import(@project, @upload_path)
+      redirect_to :action => 'import_results', :id => @project, :root_ids => root_ids
     else
       upload  = params[:uploaded_file]
       @upload_path = upload.path
@@ -36,13 +36,14 @@ class ProjectXmlSyncController < ApplicationController
   end
 
   def import_results
-    @import_root_issues = Issue.where(:root_id => params[:root_task], :parent_id => nil)
-    @import_issues = Issue.where(:root_id => params[:root_task])
+    @root_ids = params[:root_ids]
+    @import_root_issues = Issue.where(:id => @root_ids, :parent_id => nil)
+    @import_issues = Issue.where(:root_id => @root_ids)
   end
 
   def export
     begin
-      xml, name = ProjectXmlExport.generate_xml
+      xml, name = ProjectXmlExport.generate_xml()
       send_data xml, :filename => name, :disposition => :attachment
     rescue => error
       flash[:error] = "export task error: " + error.to_s
@@ -53,7 +54,7 @@ class ProjectXmlSyncController < ApplicationController
   
 private
   def find_project
-    @project = Project.find(params[:project_id])
+    @project = Project.find(params[:id])
   end
   
   def show_message(message)

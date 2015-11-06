@@ -1,5 +1,5 @@
 <p>
-<%= form_tag({:id =>'import_form', :action => 'analyze', :project_id => @project, :upload_path => @upload_path, :do_import => 'true'}, :multipart => true) do %>
+<%= form_tag({:action => 'analyze', :id => @project, :upload_path => @upload_path, :do_import => 'true'}, :multipart => true) do %>
 <%= submit_tag l(:button_import)%>
 </p>
 

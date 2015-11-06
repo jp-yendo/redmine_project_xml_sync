@@ -14,7 +14,7 @@ class ProjectXmlImport
     initValues(project, upload_path)
     analyze_xml
     insert
-    return @message, @title, @usermapping, @assignments, @tasks, @root_task_id
+    return @message, @title, @usermapping, @assignments, @tasks, @root_ids
   end
 
 private
@@ -34,7 +34,7 @@ private
     @usermapping = []
     @assignments = []
     @tasks       = []
-    @root_task_id = nil
+    @root_ids = []
   end
 
   def self.analyze_xml
@@ -120,8 +120,8 @@ private
           :author   => User.current,
           :project  => @project
           )
-        issue.status_id = 1   # 1-neu
-        issue.tracker_id = @settings[:import][:tracker_id]  # 1-Bug, 2-Feature
+        issue.status_id = @settings[:import][:issue_status_id]
+        issue.tracker_id = @settings[:import][:tracker_id]
 
         if task.task_id > 0
           issue.subject = task.name
@@ -146,9 +146,7 @@ private
         issue.description = task.notes
 
         # subtask?
-
         if task.outline_level > 0
-          issue.root_id = @root_task_id
           if task.outline_level > last_outline_level # new subtask
             parent_id = last_task_id
             parent_stack.push(parent_id)
@@ -166,7 +164,6 @@ private
             issue.parent_id = nil
           end
         end
-
         last_outline_level = task.outline_level
 
         # required custom fields:
@@ -174,21 +171,14 @@ private
 
         if issue.save
           last_task_id = issue.id
-          if @root_task_id.nil?
-            @root_task_id = issue.id
-            begin
-              issue.root_id = issue.id
-              issue.save
-            rescue Exception => innerex
-              Rails.logger.info "Error: root_id save <#{innerex.to_s}>"
-              @message[:warning] = "Error: root_id save <#{innerex.to_s}>"
-            end
+          if issue.parent_id.nil?
+            @root_ids.push(issue.id)
           end
-          Rails.logger.info "New issue #{task.name} in Project: #{@project} created!"
+          Rails.logger.info "New issue #{task.name} in Project: #{@project} created! id:#{issue.id}, root_id:#{issue.root_id}"
           @message[:notice] = "Project successful inserted!"
         else
           iss_error = issue.errors.full_messages
-          Rails.logger.info "Issue #{task.name} in Project: #{@project} gives Error: #{iss_error}"
+          Rails.logger.info "Issue #{task.name} in Project: #{@project} gives Error: #{iss_error} root_id:#{issue.root_id}"
           @message[:error] = "Error: #{iss_error}"
           return
         end

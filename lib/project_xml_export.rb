@@ -1,15 +1,9 @@
 include ProjectXmlSyncHelper
 
 class ProjectXmlExport
-  def self.generate_xml
-    @uid = 1
-    request_from = Rails.application.routes.recognize_path(request.referrer)
-    #get_sorted_query unless request_from[:controller] =~ /project_xml_sync/
-    @resource_id_to_uid = {}
-    @task_id_to_uid = {}
-    @version_id_to_uid = {}
-    @calendar_id_to_uid = {}
-
+  def self.generate_xml(project)
+    initValues(project)
+    
     export = Nokogiri::XML::Builder.new(encoding: 'UTF-8') do |xml|
       resources = @project.assignable_users
       xml.Project {
@@ -156,10 +150,16 @@ class ProjectXmlExport
   end
 
 private
-  def self.initValues(project, upload_path)
+  def self.initValues(project)
     @settings ||= Setting.plugin_redmine_project_xml_sync
     @export_versions = @settings[:export][:sync_versions] == '1'
     @ignore_fields = @settings[:export][:ignore_fields].select { |attr, val| val == '1' }.keys
+
+    @uid = 1
+    @resource_id_to_uid = {}
+    @task_id_to_uid = {}
+    @version_id_to_uid = {}
+    @calendar_id_to_uid = {}
   end
 
   def self.determine_nesting(issues, versions_count)

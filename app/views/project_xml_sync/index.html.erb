@@ -1,7 +1,7 @@
 <%= stylesheet_link_tag 'project_xml_sync', plugin: 'redmine_project_xml_sync' %>
 <div class='left half'>
   <h1><%= l(:import_tasks) %></h1>
-  <%= form_tag({:action => 'analyze', :project_id => @project}, :multipart => true) do %>
+  <%= form_tag({:action => 'analyze', :id => @project}, :multipart => true) do %>
     <%= render partial: 'about_import' %>
     <%= file_field_tag 'uploaded_file' %>
     <%= submit_tag l(:button_analyze) %>
@@ -9,7 +9,7 @@
 </div>
 <div class='right half'>
   <h1><%= l(:export_tasks) %></h1>
-  <%= form_tag({:action => 'export', :project_id => @project}, :multipart => true) do %>
+  <%= form_tag({:action => 'export', :id => @project}, :multipart => true) do %>
     <%= render partial: 'about_export' %>
     <%= submit_tag l(:button_export) %>
   <% end %>

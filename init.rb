@@ -47,5 +47,5 @@ Redmine::Plugin.register :redmine_project_xml_sync do
   end
 
   menu :project_menu, :project_xml_sync, { controller: :project_xml_sync, action: :index },
-    caption: :menu_caption, after: :new_issue, param: :project_id
+    caption: :menu_caption #, after: :new_issue
 end
