@@ -121,7 +121,7 @@ private
           :project  => @project
           )
         issue.status_id = 1   # 1-neu
-        issue.tracker_id = @setting[:import][:tracker_id]  # 1-Bug, 2-Feature
+        issue.tracker_id = @settings[:import][:tracker_id]  # 1-Bug, 2-Feature
 
         if task.task_id > 0
           issue.subject = task.name
@@ -180,7 +180,8 @@ private
               issue.root_id = issue.id
               issue.save
             rescue Exception => innerex
-              @message[:warning] = "Error: root_id save [#{innerex.to_s}]"
+              Rails.logger.info "Error: root_id save <#{innerex.to_s}>"
+              @message[:warning] = "Error: root_id save <#{innerex.to_s}>"
             end
           end
           Rails.logger.info "New issue #{task.name} in Project: #{@project} created!"

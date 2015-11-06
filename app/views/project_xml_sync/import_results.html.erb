@@ -1,9 +1,8 @@
 <h2>Project Import - Results:</h2> 
-<% root_issues = Issue.where(:root_id => params[:root_task], :parent_id => nil) %>
 <p>
 Alle Aufgaben wurden importiert unter:<br />
-<% root_issues.each do |root_issue| %>
-  <%= link_to "#{root_issue.subject}(#{root_issue.id})", {:controller => "issues", :action => "show", :id => issue} %><br />
+<% @import_root_issues.each do |root_issue| %>
+  <%= link_to "#{root_issue.subject}(#{root_issue.id})", {:controller => "issues", :action => "show", :id => root_issue.id} %><br />
 <% end %>
 </p>
 
@@ -13,7 +12,6 @@ Alle Aufgaben wurden importiert unter:<br />
 </p>
 <p>
 <h3>Imported Tasks:</h3>
-<% issues = Issue.where(:root_id => params[:root_task]) %>
 <table class="list">
   <tr>
     <th><%= l(:task_tag)%></th>
@@ -21,7 +19,7 @@ Alle Aufgaben wurden importiert unter:<br />
     <th>Info</th>
   </tr>
   <%
-  issues.each do |task|
+  @import_issues.each do |task|
     if task.assigned_to_id.nil? || task.assigned_to_id == 0
       user="Not assigned!"
       css_td="warning"
@@ -31,7 +29,7 @@ Alle Aufgaben wurden importiert unter:<br />
     end
   %>
     <tr class="issue idnt idnt-<%=issue_deep(task)%>">
-      <td class="subject"><%= link_to "#{task.subject}(#{task.id})", {:controller => "issues", :action => "show", :id => task} %></td>
+      <td class="subject"><%= link_to "#{task.subject}(#{task.id})", {:controller => "issues", :action => "show", :id => task.id} %></td>
       <td class="assigned_to <%=css_td%>"><%= user%></td>
       <td></td>
     </tr>

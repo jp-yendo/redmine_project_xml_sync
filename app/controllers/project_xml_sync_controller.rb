@@ -36,7 +36,8 @@ class ProjectXmlSyncController < ApplicationController
   end
 
   def import_results
-
+    @import_root_issues = Issue.where(:root_id => params[:root_task], :parent_id => nil)
+    @import_issues = Issue.where(:root_id => params[:root_task])
   end
 
   def export
