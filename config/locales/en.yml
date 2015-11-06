@@ -14,7 +14,6 @@ en:
   user_imp_status_1: "User found."
   user_imp_status_2: "User not Member of Project."
   user_imp_status_3: "User not found."
-  no_failed_mapping: "%{count} Users missing or not in project! Please resolve manually."
 
   settings:
     project_xml_sync_settings:

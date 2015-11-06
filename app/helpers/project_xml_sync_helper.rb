@@ -10,7 +10,7 @@ module ProjectXmlSyncHelper
   end
 
   def xml_resources resources
-      resource = MsprojResource.new
+      resource = ProjectResource.new
       id = resources.elements['UID']
       resource.uid = id.text.to_i if id
       name = resources.elements['Name']
@@ -35,7 +35,7 @@ module ProjectXmlSyncHelper
   end
 
   def xml_tasks tasks
-      task = MsprojTask.new
+      task = ProjectTask.new
       task.task_id = tasks.elements['ID'].text.to_i
       task.wbs = tasks.elements['WBS'].text
 #      task.outline_number = tasks.elements['OutlineNumber'].text

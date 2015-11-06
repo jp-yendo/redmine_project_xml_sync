@@ -1,3 +1,9 @@
+require 'redmine'
+
+ActionDispatch::Callbacks.to_prepare do
+  SettingsHelper.__send__(:include, SettingsHelperPatch)
+end
+
 Redmine::Plugin.register :redmine_project_xml_sync do
   name 'Redmine Project Xml Sync plugin'
   author 'Yuichiro Endo'
