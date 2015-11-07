@@ -1,5 +1,13 @@
 include ProjectXmlSyncHelper
 
+#redmine          project xml
+#'description'    'notes'
+#'start_date'     'start'
+#'due_date'       'finish'
+#'estimated_hours''duration'
+#'subject'        'title'
+#'done_ratio'     'percentcomplete'
+
 class ProjectXmlExport
   def self.generate_xml(project)
     initValues(project)
@@ -67,6 +75,8 @@ class ProjectXmlExport
             }
           end
         }
+
+Rails.logger.info("--- Create Tasks")
         xml.Tasks {
           xml.Task {
             xml.UID 0
@@ -78,11 +88,14 @@ class ProjectXmlExport
             xml.Type 1
             xml.CreateDate @project.created_on.to_s(:project_xml)
           }
+Rails.logger.info("--- Created task tag")
 
           if @export_versions
             versions = @query ? Version.where(id: @query_issues.map(&:fixed_version_id).uniq) : @project.versions
             versions.each { |version| write_version(xml, version) }
           end
+
+Rails.logger.info("--- Call determine_nesting")
           issues = (@query_issues || @project.issues.visible)
           nested_issues = determine_nesting issues, versions.try(:count)
           nested_issues.each_with_index { |issue, id| write_task(xml, issue, id) }
@@ -166,6 +179,7 @@ private
   def self.determine_nesting(issues, versions_count)
     versions_count ||= 0
     nested_issues = []
+Rails.logger.info("--- determine_nesting start")
     leveled_tasks = issues.sort_by(&:id).group_by(&:level)
     leveled_tasks.sort_by{ |key| key }.each do |level, grouped_issues|
       grouped_issues.each_with_index do |issue, index|
