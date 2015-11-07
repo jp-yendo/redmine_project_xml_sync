@@ -48,4 +48,8 @@ Redmine::Plugin.register :redmine_project_xml_sync do
 
   menu :project_menu, :project_xml_sync, { controller: :project_xml_sync, action: :index },
     caption: :menu_caption #, after: :new_issue
+
+  Time::DATE_FORMATS.merge!(
+    :project_xml => lambda{ |time| time.strftime("%Y-%m-%dT%H:%M:%S") }
+  )
 end

@@ -76,7 +76,7 @@ class ProjectXmlExport
             xml.OutlineLevel 0
             xml.Name @project.name
             xml.Type 1
-            xml.CreateDate @project.created_on.to_s(:ms_xml)
+            xml.CreateDate @project.created_on.to_s(:project_xml)
           }
 
           if @export_versions
@@ -86,7 +86,6 @@ class ProjectXmlExport
           issues = (@query_issues || @project.issues.visible)
           nested_issues = determine_nesting issues, versions.try(:count)
           nested_issues.each_with_index { |issue, id| write_task(xml, issue, id) }
-
         }
         xml.Resources {
           xml.Resource {
@@ -135,8 +134,8 @@ class ProjectXmlExport
                   xml.UID @uid
                   xml.Unit 2
                   xml.Value get_scorm_time(issue.total_spent_hours)
-                  xml.Start (issue.start_date || issue.created_on).to_time.to_s(:ms_xml)
-                  xml.Finish ((issue.start_date || issue.created_on).to_time + (issue.total_spent_hours.to_i).hours).to_s(:ms_xml)
+                  xml.Start (issue.start_date || issue.created_on).to_time.to_s(:project_xml)
+                  xml.Finish ((issue.start_date || issue.created_on).to_time + (issue.total_spent_hours.to_i).hours).to_s(:project_xml)
                 }
               end
             }
@@ -151,6 +150,8 @@ class ProjectXmlExport
 
 private
   def self.initValues(project)
+    @project = project
+
     @settings ||= Setting.plugin_redmine_project_xml_sync
     @export_versions = @settings[:export][:sync_versions] == '1'
     @ignore_fields = @settings[:export][:ignore_fields].select { |attr, val| val == '1' }.keys
@@ -168,11 +169,13 @@ private
     leveled_tasks = issues.sort_by(&:id).group_by(&:level)
     leveled_tasks.sort_by{ |key| key }.each do |level, grouped_issues|
       grouped_issues.each_with_index do |issue, index|
+Rails.logger.info("--- Issue #{issue.id}")
         outlinenumber = if issue.child?
           "#{nested_issues.detect{ |struct| struct.id == issue.parent_id }.try(:outlinenumber)}.#{leveled_tasks[level].index(issue).next}"
         else
           (leveled_tasks[level].index(issue).next + versions_count).to_s
         end
+Rails.logger.info("--- Issue #{issue.id} - outlinenumber: #{outlinenumber}")
         nested_issues << ExportTask.new(issue, issue.level.next, outlinenumber)
       end
     end
@@ -208,11 +211,11 @@ private
       xml.Notes(struct.description) unless ignore_field?(:description, :export)
       xml.Active 1
       xml.IsNull 0
-      xml.CreateDate struct.created_on.to_s(:ms_xml)
+      xml.CreateDate struct.created_on.to_s(:project_xml)
       xml.HyperlinkAddress issue_url(struct.issue)
       xml.Priority(ignore_field?(:priority, :export) ? 500 : get_priority_value(struct.priority.name))
       start_date = struct.issue.next_working_date(struct.start_date || struct.created_on.to_date)
-      xml.Start start_date.to_time.to_s(:ms_xml)
+      xml.Start start_date.to_time.to_s(:project_xml)
       finish_date = if struct.due_date
                       if struct.issue.next_working_date(struct.due_date).day == start_date.day
                         start_date.next
@@ -222,13 +225,13 @@ private
                     else
                       start_date.next
                     end
-      xml.Finish finish_date.to_time.to_s(:ms_xml)
-      xml.ManualStart start_date.to_time.to_s(:ms_xml)
-      xml.ManualFinish finish_date.to_time.to_s(:ms_xml)
-      xml.EarlyStart start_date.to_time.to_s(:ms_xml)
-      xml.EarlyFinish finish_date.to_time.to_s(:ms_xml)
-      xml.LateStart start_date.to_time.to_s(:ms_xml)
-      xml.LateFinish finish_date.to_time.to_s(:ms_xml)
+      xml.Finish finish_date.to_time.to_s(:project_xml)
+      xml.ManualStart start_date.to_time.to_s(:project_xml)
+      xml.ManualFinish finish_date.to_time.to_s(:project_xml)
+      xml.EarlyStart start_date.to_time.to_s(:project_xml)
+      xml.EarlyFinish finish_date.to_time.to_s(:project_xml)
+      xml.LateStart start_date.to_time.to_s(:project_xml)
+      xml.LateFinish finish_date.to_time.to_s(:project_xml)
       time = get_scorm_time(struct.estimated_hours)
       xml.Work time
       #xml.Duration time
@@ -240,7 +243,7 @@ private
       xml.Milestone 0
       xml.FixedCostAccrual 3
       xml.ConstraintType 2
-      xml.ConstraintDate start_date.to_time.to_s(:ms_xml)
+      xml.ConstraintDate start_date.to_time.to_s(:project_xml)
       xml.IgnoreResourceCalendar 0
       parent = struct.leaf? ? 0 : 1
       xml.Summary(parent)
@@ -294,15 +297,15 @@ private
       xml.ID version.id
       xml.Name version.name
       xml.Notes version.description
-      xml.CreateDate version.created_on.to_s(:ms_xml)
+      xml.CreateDate version.created_on.to_s(:project_xml)
       if version.effective_date
-        xml.Start version.effective_date.to_time.to_s(:ms_xml)
-        xml.Finish version.effective_date.to_time.to_s(:ms_xml)
+        xml.Start version.effective_date.to_time.to_s(:project_xml)
+        xml.Finish version.effective_date.to_time.to_s(:project_xml)
       end
       xml.Milestone 1
       xml.FixedCostAccrual 3
       xml.ConstraintType 4
-      xml.ConstraintDate version.try(:effective_date).try(:to_time).try(:to_s, :ms_xml)
+      xml.ConstraintDate version.try(:effective_date).try(:to_time).try(:to_s, :project_xml)
       xml.Summary 1
       xml.Critical 1
       xml.Rollup 1

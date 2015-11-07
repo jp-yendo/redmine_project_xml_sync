@@ -42,14 +42,8 @@ class ProjectXmlSyncController < ApplicationController
   end
 
   def export
-    begin
-      xml, name = ProjectXmlExport.generate_xml()
-      send_data xml, :filename => name, :disposition => :attachment
-    rescue => error
-      flash[:error] = "export task error: " + error.to_s
-      Rails.logger.debug "DEBUG: export task error: #{ error }"
-      redirect_to :action => "index"
-    end
+    xml, name = ProjectXmlExport.generate_xml(@project)
+    send_data xml, :filename => name, :disposition => :attachment
   end
   
 private
