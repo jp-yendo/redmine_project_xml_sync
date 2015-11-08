@@ -205,10 +205,10 @@ private
     versions_count ||= 0
     nested_issues = []
     leveled_tasks = issues.preload(:status, :priority, :tracker).sort_by(&:id).group_by(&:lft)
-#    leveled_tasks.sort_by{ |key| key }.each do |level, grouped_issues|
-#      grouped_issues.each_with_index do |issue, index|
-    leveled_tasks.each do |level, grouped_issues|
-      grouped_issues.each do |issue|
+#    leveled_tasks.each do |level, grouped_issues|
+#      grouped_issues.each do |issue|
+    leveled_tasks.sort_by{ |key| key }.each do |level, grouped_issues|
+      grouped_issues.each_with_index do |issue, index|
         outlinenumber = if issue.child?
                           "#{nested_issues.detect{ |struct| struct.id == issue.parent_id }.try(:outlinenumber)}.#{leveled_tasks[level].index(issue).next}"
                         else
