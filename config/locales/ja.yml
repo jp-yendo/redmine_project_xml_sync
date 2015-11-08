@@ -1,0 +1,29 @@
+ja:
+  menu_caption: "XML Import/Export"
+
+  import_tasks: "タスク インポート"
+  export_tasks: "タスク エクスポート"
+  button_analyze: "解析"
+  button_import: "インポート"
+  button_export: "エクスポート"
+
+  project_title: "プロジェクト名"
+  task_tag: "タスク"
+  assignment_tag: "担当"
+  assignedto_auto: "担当関連付け"
+  xml_assignment:   "プロジェクトに関連付いた"
+  user_imp_status_1: "ユーザーが見つかった"
+  user_imp_status_2: "ユーザーがプロジェクトのメンバーでない"
+  user_imp_status_3: "ユーザーが存在しない"
+
+  settings:
+    project_xml_sync_settings:
+      tracker_alias: "トラッカーフィールドの名前"
+      redmine_id_alias: "Issue IDフィールドの名前"
+      redmine_status_alias: "ステータスフィールドの名前"
+      instant_import_tasks: "Max number of tasks to immediately import"
+      default_tracker: "デフォルトトラッカー"
+      default_issue_status: "デフォルトステータス"
+      export_settings: "エクスポート設定"
+      import_settings: "インポート設定"
+      ignore_fields: "除外フィールド"
