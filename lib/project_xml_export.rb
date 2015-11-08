@@ -8,13 +8,37 @@ include ProjectXmlSyncHelper
 #'subject'        'title'
 #'done_ratio'     'percentcomplete'
 
+#        <Type>0</Type>
+#        <Priority>500</Priority>
+#        <Duration>PT520H0M0S</Duration>
+#        <DurationFormat>7</DurationFormat>
+#        <ResumeValid>0</ResumeValid>
+#        <EffortDriven>1</EffortDriven>
+#        <Recurring>0</Recurring>
+#        <OverAllocated>0</OverAllocated>
+#        <Estimated>0</Estimated>
+#        <Critical>1</Critical>
+#        <IsSubproject>0</IsSubproject>
+#        <IsSubprojectReadOnly>0</IsSubprojectReadOnly>
+#        <ExternalTask>0</ExternalTask>
+#        <RemainingDuration>PT520H0M0S</RemainingDuration>
+#        <CalendarUID>-1</CalendarUID>
+#        <LevelAssignments>0</LevelAssignments>
+#        <LevelingCanSplit>0</LevelingCanSplit>
+#        <LevelingDelay>0</LevelingDelay>
+#        <LevelingDelayFormat>7</LevelingDelayFormat>
+#        <HideBar>0</HideBar>
+#        <EarnedValueMethod>0</EarnedValueMethod>
+#        <Manual>0</Manual>
+
 class ProjectXmlExport
   def self.generate_xml(project)
     initValues(project)
     
     export = Nokogiri::XML::Builder.new(encoding: 'UTF-8') do |xml|
       resources = @project.assignable_users
-      xml.Project {
+      xml.Project(:xmlns=>"http://schemas.microsoft.com/project") {
+        #xmlns="http://schemas.microsoft.com/project"
         xml.Title @project.name
         xml.ExtendedAttributes {
           xml.ExtendedAttribute {
