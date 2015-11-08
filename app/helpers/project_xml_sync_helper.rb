@@ -73,7 +73,7 @@ module ProjectXmlSyncHelper
       task.notes=tasks.elements["Notes"].text if tasks.elements["Notes"]
     return task
   end rescue raise 'parse error'
-  
+
 private
   def has_task name, issues
     issues.each do |issue|

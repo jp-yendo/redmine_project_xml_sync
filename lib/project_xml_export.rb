@@ -76,26 +76,23 @@ class ProjectXmlExport
           end
         }
 
-Rails.logger.info("--- Create Tasks")
         xml.Tasks {
-          xml.Task {
-            xml.UID 0
-            xml.ID 0
-            xml.ConstraintType 0
-            xml.OutlineNumber 0
-            xml.OutlineLevel 0
-            xml.Name @project.name
-            xml.Type 1
-            xml.CreateDate @project.created_on.to_s(:project_xml)
-          }
-Rails.logger.info("--- Created task tag")
+#          xml.Task {
+#            xml.UID 0
+#            xml.ID 0
+#            xml.ConstraintType 0
+#            xml.OutlineNumber 0
+#            xml.OutlineLevel 0
+#            xml.Name @project.name
+#            xml.Type 1
+#            xml.CreateDate @project.created_on.to_s(:project_xml)
+#          }
 
           if @export_versions
             versions = @query ? Version.where(id: @query_issues.map(&:fixed_version_id).uniq) : @project.versions
             versions.each { |version| write_version(xml, version) }
           end
 
-Rails.logger.info("--- Call determine_nesting")
           issues = (@query_issues || @project.issues.visible)
           nested_issues = determine_nesting issues, versions.try(:count)
           nested_issues.each_with_index { |issue, id| write_task(xml, issue, id) }
@@ -130,7 +127,7 @@ Rails.logger.info("--- Call determine_nesting")
           source_issues.select { |issue| issue.assigned_to_id? && issue.leaf? }.each do |issue|
             @uid += 1
             xml.Assignment {
-              unless ignore_field?(:estimated_hours, :export) && !issue.leaf?
+              unless ignore_field?(:estimated_hours) && !issue.leaf?
                 time = get_scorm_time(issue.estimated_hours)
                 xml.Work time
                 xml.RegularWork time
@@ -139,7 +136,7 @@ Rails.logger.info("--- Call determine_nesting")
               xml.UID @uid
               xml.TaskUID @task_id_to_uid[issue.id]
               xml.ResourceUID @resource_id_to_uid[issue.assigned_to_id]
-              xml.PercentWorkComplete issue.done_ratio unless ignore_field?(:done_ratio, :export)
+              xml.PercentWorkComplete issue.done_ratio unless ignore_field?(:done_ratio)
               xml.Units 1
               unless issue.total_spent_hours.zero?
                 xml.TimephasedData {
@@ -176,21 +173,22 @@ private
     @calendar_id_to_uid = {}
   end
 
+  def self.ignore_field?(field)
+    field.to_s.in?(@ignore_fields)
+  end
+  
   def self.determine_nesting(issues, versions_count)
     versions_count ||= 0
     nested_issues = []
-Rails.logger.info("--- determine_nesting start")
-    leveled_tasks = issues.sort_by(&:id).group_by(&:level)
+    leveled_tasks = issues.preload(:status, :priority, :tracker).sort_by(&:id).group_by(&:lft)
     leveled_tasks.sort_by{ |key| key }.each do |level, grouped_issues|
       grouped_issues.each_with_index do |issue, index|
-Rails.logger.info("--- Issue #{issue.id}")
         outlinenumber = if issue.child?
-          "#{nested_issues.detect{ |struct| struct.id == issue.parent_id }.try(:outlinenumber)}.#{leveled_tasks[level].index(issue).next}"
-        else
-          (leveled_tasks[level].index(issue).next + versions_count).to_s
-        end
-Rails.logger.info("--- Issue #{issue.id} - outlinenumber: #{outlinenumber}")
-        nested_issues << ExportTask.new(issue, issue.level.next, outlinenumber)
+                          "#{nested_issues.detect{ |struct| struct.id == issue.parent_id }.try(:outlinenumber)}.#{leveled_tasks[level].index(issue).next}"
+                        else
+                          (leveled_tasks[level].index(issue).next + versions_count).to_s
+                        end
+        nested_issues << ExportTask.new(issue, leveled_tasks[level].index(issue).next, outlinenumber)
       end
     end
     return nested_issues.sort_by!(&:outlinenumber)
@@ -220,14 +218,14 @@ Rails.logger.info("--- Issue #{issue.id} - outlinenumber: #{outlinenumber}")
     @task_id_to_uid[struct.id] = @uid
     xml.Task {
       xml.UID @uid
-      xml.ID id.next
+      xml.ID @uid #id.next
       xml.Name(struct.subject)
-      xml.Notes(struct.description) unless ignore_field?(:description, :export)
+      xml.Notes(struct.description) unless ignore_field?(:description)
       xml.Active 1
       xml.IsNull 0
       xml.CreateDate struct.created_on.to_s(:project_xml)
-      xml.HyperlinkAddress issue_url(struct.issue)
-      xml.Priority(ignore_field?(:priority, :export) ? 500 : get_priority_value(struct.priority.name))
+      xml.HyperlinkAddress '' #issue_url(struct.issue)
+      xml.Priority(ignore_field?(:priority) ? 500 : get_priority_value(struct.priority.name))
       start_date = struct.issue.next_working_date(struct.start_date || struct.created_on.to_date)
       xml.Start start_date.to_time.to_s(:project_xml)
       finish_date = if struct.due_date
@@ -308,7 +306,7 @@ Rails.logger.info("--- Issue #{issue.id} - outlinenumber: #{outlinenumber}")
       @uid += 1
       @version_id_to_uid[version.id] = @uid
       xml.UID @uid
-      xml.ID version.id
+      xml.ID @uid #version.id
       xml.Name version.name
       xml.Notes version.description
       xml.CreateDate version.created_on.to_s(:project_xml)
