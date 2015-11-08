@@ -205,8 +205,10 @@ private
     versions_count ||= 0
     nested_issues = []
     leveled_tasks = issues.preload(:status, :priority, :tracker).sort_by(&:id).group_by(&:lft)
-    leveled_tasks.sort_by{ |key| key }.each do |level, grouped_issues|
-      grouped_issues.each_with_index do |issue, index|
+#    leveled_tasks.sort_by{ |key| key }.each do |level, grouped_issues|
+#      grouped_issues.each_with_index do |issue, index|
+    leveled_tasks.each do |level, grouped_issues|
+      grouped_issues.each do |issue|
         outlinenumber = if issue.child?
                           "#{nested_issues.detect{ |struct| struct.id == issue.parent_id }.try(:outlinenumber)}.#{leveled_tasks[level].index(issue).next}"
                         else
@@ -242,7 +244,7 @@ private
     @task_id_to_uid[struct.id] = @uid
     xml.Task {
       xml.UID @uid
-      xml.ID @uid #id.next
+      xml.ID id.next
       xml.Name(struct.subject)
       xml.Notes(struct.description) unless ignore_field?(:description)
       xml.Active 1
@@ -330,7 +332,7 @@ private
       @uid += 1
       @version_id_to_uid[version.id] = @uid
       xml.UID @uid
-      xml.ID @uid #version.id
+      xml.ID version.id
       xml.Name version.name
       xml.Notes version.description
       xml.CreateDate version.created_on.to_s(:project_xml)
