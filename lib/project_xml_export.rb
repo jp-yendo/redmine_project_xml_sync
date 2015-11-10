@@ -38,7 +38,6 @@ class ProjectXmlExport
     export = Nokogiri::XML::Builder.new(encoding: 'UTF-8') do |xml|
       resources = @project.assignable_users
       xml.Project(:xmlns=>"http://schemas.microsoft.com/project") {
-        #xmlns="http://schemas.microsoft.com/project"
         xml.Title @project.name
         xml.ExtendedAttributes {
           xml.ExtendedAttribute {

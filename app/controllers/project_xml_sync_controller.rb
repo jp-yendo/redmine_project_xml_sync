@@ -1,19 +1,26 @@
+MultipleIssuesForUniqueValue = Class.new(Exception)
+NoIssueForUniqueValue = Class.new(Exception)
+
+class Journal < ActiveRecord::Base
+  def empty?(*args)
+    (details.empty? && notes.blank?)
+  end
+end
+
 class ProjectXmlSyncController < ApplicationController
   unloadable
 
-  before_filter :find_project, only: [:index, :analyze, :import_results, :export]
+  before_filter :find_project, only: [:index, :analyze, :import_results, :export, :csv_import_match, :csv_import_result, :csv_export]
 #  before_filter :find_project, :get_plugin_settings, only: [:index, :analyze, :import_results, :export]
   before_filter :authorize, :except => :analyze
 #  before_filter :get_import_settings, :only => [:index, :analyze, :import_results]
 #  before_filter :get_export_settings, :only => [:index, :export]
 
   def index
-    flash.clear
+#    flash.clear
   end
 
   def analyze
-    flash.clear
-
     if params[:do_import].nil?
       do_import = 'false'
     else
@@ -44,6 +51,26 @@ class ProjectXmlSyncController < ApplicationController
   def export
     xml, name = ProjectXmlExport.generate_xml(@project)
     send_data xml, :filename => name, :disposition => :attachment
+  end
+
+  def csv_import_match
+    message = ProjectCsvImport.match(@project)
+    show_message(message)
+  end
+
+  def csv_import_result
+    message = ProjectCsvImport.result(@project)
+    show_message(message)
+  end
+  
+  def csv_export
+    begin
+      csv, name = ProjectCsvExport.generate_simple_csv(@project)
+      send_data csv, :filename => name, :disposition => :attachment
+    rescue Exception => ex
+      
+    end
+    show_message(ProjectCsvExport.message)
   end
   
 private

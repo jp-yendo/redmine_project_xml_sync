@@ -1,16 +1,62 @@
-<%= stylesheet_link_tag 'project_xml_sync', plugin: 'redmine_project_xml_sync' %>
+<% content_for :header_tags do %>
+  <%= javascript_include_tag "project_xml_sync", :plugin=>'redmine_project_xml_sync' %>
+  <%= stylesheet_link_tag 'project_xml_sync', :plugin => 'redmine_project_xml_sync' %>
+<% end %>
+
 <div class='left half'>
   <h1><%= l(:import_tasks) %></h1>
+  <%= render partial: 'about_import' %>
+
+  <p>
+  <h3>XML</h3>
   <%= form_tag({:action => 'analyze', :id => @project}, :multipart => true) do %>
-    <%= render partial: 'about_import' %>
     <%= file_field_tag 'uploaded_file' %>
     <%= submit_tag l(:button_analyze) %>
   <% end %>
+  </p>
+  <br /><br />
+
+  <p>
+  <h3>CSV - 工事中</h3>
+  <%= form_tag({:action => 'csv_import_match', :id => @project}, {:multipart => true}) do %>
+    <p><label><%=l(:label_upload_notice)%></label><br/>
+      <%= file_field_tag 'file', :size => 60%></p>
+
+    <fieldset class="box"><legend><%= l(:label_upload_format) %></legend>
+      <p><label><%=l(:label_upload_encoding)%></label>
+        <%= select_tag "encoding",
+            "<option value=\"U\">UTF8</option>" \
+            "<option value=\"EUC\">EUC</option>" \
+            "<option value=\"S\">SJIS</option>" \
+            "<option value=\"N\">None</option>".html_safe %></p>
+
+      <p><label><%=l(:label_upload_splitter)%></label>
+        <%= text_field_tag "splitter", ',', {:size => 3, :maxlength => 1}%></p>
+
+      <p><label><%=l(:label_upload_wrapper)%></label>
+        <%= text_field_tag "wrapper", '"', {:size => 3, :maxlength => 1}%></p>
+    </fieldset>
+
+    <%= submit_tag l(:button_upload) %>
+  <% end %>
+  </p>
 </div>
 <div class='right half'>
   <h1><%= l(:export_tasks) %></h1>
+  <%= render partial: 'about_export' %>
+
+  <p>
+  <h3>XML - 工事中</h3>
   <%= form_tag({:action => 'export', :id => @project}, :multipart => true) do %>
-    <%= render partial: 'about_export' %>
     <%= submit_tag l(:button_export) %>
   <% end %>
+  </p>
+  <br /><br />
+
+  <p>
+  <h3>CSV</h3>
+  <%= form_tag({:action => 'csv_export', :id => @project}, :multipart => true) do %>
+    <%= submit_tag l(:button_export) %>
+  <% end %>
+  </p>
 </div>
