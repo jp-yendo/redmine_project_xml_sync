@@ -6,6 +6,7 @@
 <div class='left half'>
   <h1><%= l(:import_tasks) %></h1>
   <%= render partial: 'about_import' %>
+  <br />
 
   <p>
   <h3>XML</h3>
@@ -14,36 +15,37 @@
     <%= submit_tag l(:button_analyze) %>
   <% end %>
   </p>
-  <br /><br />
+  <br />
 
   <p>
   <h3>CSV - 工事中</h3>
   <%= form_tag({:action => 'csv_import_match', :id => @project}, {:multipart => true}) do %>
-    <p><label><%=l(:label_upload_notice)%></label><br/>
-      <%= file_field_tag 'file', :size => 60%></p>
-
-    <fieldset class="box"><legend><%= l(:label_upload_format) %></legend>
-      <p><label><%=l(:label_upload_encoding)%></label>
-        <%= select_tag "encoding",
+    <fieldset class="box"><legend><%= l(:label_file_format) %></legend>
+      <p><label><%=l(:label_file_encoding)%>:</label>
+        <%= select_tag "csv_import_encoding",
             "<option value=\"U\">UTF8</option>" \
             "<option value=\"EUC\">EUC</option>" \
             "<option value=\"S\">SJIS</option>" \
             "<option value=\"N\">None</option>".html_safe %></p>
 
-      <p><label><%=l(:label_upload_splitter)%></label>
+      <p><label><%=l(:label_upload_splitter)%>:</label>
         <%= text_field_tag "splitter", ',', {:size => 3, :maxlength => 1}%></p>
 
-      <p><label><%=l(:label_upload_wrapper)%></label>
+      <p><label><%=l(:label_upload_wrapper)%>:</label>
         <%= text_field_tag "wrapper", '"', {:size => 3, :maxlength => 1}%></p>
     </fieldset>
 
-    <%= submit_tag l(:button_upload) %>
+    <label><%=l(:label_upload_notice)%></label><br/>
+
+    <%= file_field_tag 'file' %>
+    <%= submit_tag l(:button_analyze) %>
   <% end %>
   </p>
 </div>
 <div class='right half'>
   <h1><%= l(:export_tasks) %></h1>
   <%= render partial: 'about_export' %>
+  <br />
 
   <p>
   <h3>XML - 工事中</h3>
@@ -51,11 +53,17 @@
     <%= submit_tag l(:button_export) %>
   <% end %>
   </p>
-  <br /><br />
+  <br />
 
   <p>
   <h3>CSV</h3>
   <%= form_tag({:action => 'csv_export', :id => @project}, :multipart => true) do %>
+    <fieldset class="box"><legend><%= l(:label_file_format) %></legend>
+      <p><label><%=l(:label_file_encoding)%>:</label>
+        <%= select_tag "csv_export_encoding",
+            "<option value=\"U\">UTF8</option>" \
+            "<option value=\"S\">SJIS</option>".html_safe %></p>
+    </fieldset>
     <%= submit_tag l(:button_export) %>
   <% end %>
   </p>

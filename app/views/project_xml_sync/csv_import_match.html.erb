@@ -70,7 +70,7 @@
     <br/>
     <label>
       <%= check_box_tag "use_issue_id", true, false %>
-      Import using issue ids
+      <%= l(:label_importer_issue_ids) %>
     </label>
     <br/>
     <label>
@@ -106,7 +106,7 @@
     <br/>
   </fieldset>
 
-  <%= submit_tag l(:button_submit) %>
+  <%= submit_tag l(:button_import) %>
   <br/>
 <% end %>
 
