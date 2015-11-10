@@ -66,6 +66,10 @@ class ProjectXmlSyncController < ApplicationController
   def csv_export
     begin
       csv, name = ProjectCsvExport.generate_simple_csv(@project)
+      case params[:csv_export_encoding]
+      when "S"
+        csv = csv.encode("Shift_JIS")
+      end
       send_data csv, :filename => name, :disposition => :attachment
     rescue Exception => ex
       
