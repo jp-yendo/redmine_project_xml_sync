@@ -66,9 +66,9 @@ class ProjectCsvExport
         rescue
           value = ""
         end
-        csvline += """"
+        csvline += "\""
         csvline += value.to_s
-        csvline += """"
+        csvline += "\""
       end
 
       csvline += "\n"
