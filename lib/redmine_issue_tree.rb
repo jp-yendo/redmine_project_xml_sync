@@ -15,7 +15,6 @@ Rails.logger.info("----- getIssues")
     root_issues.each_with_index do |root_issue, index|
       extend_issue = ExtendIssue.new
       extend_issue.issue = root_issue
-      extend_issue.EntryHour = nil
       extend_issue.OutlineLevel = 1
       extend_issue.OutlineNumber = (index+1).to_s
       result << extend_issue
@@ -29,7 +28,6 @@ Rails.logger.info("----- getNestIssues")
     issue.children.each_with_index do |issue, index|
       extend_issue = ExtendIssue.new
       extend_issue.issue = issue
-      extend_issue.EntryHour = nil
       extend_issue.OutlineLevel = (outlinelevel+1)
       extend_issue.OutlineNumber = outlinenumber + "." + (index+1).to_s
       result << extend_issue

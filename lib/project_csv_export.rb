@@ -21,7 +21,7 @@ class ProjectCsvExport
         :priority => "priority",
         :parent_id => "parent_id",
         :is_private => "is_private",
-        :entryhour => "extend.EntryHour",
+        :actual_time => "calc.ActualTime",
         :outlinelevel => "extend.OutlineLevel",
         :outlinenumber => "extend.OutlineNumber"
       }
@@ -57,6 +57,12 @@ class ProjectCsvExport
           if callmethod.start_with?("extend.")
             callmethod = callmethod[7,callmethod.length-7]
             value = exissue.send(callmethod)
+          elsif callmethod.start_with?("calc.")
+            calcname = callmethod[5,callmethod.length-5]
+            case calcname
+            when "ActualTime"
+              value = ""
+            end
           else
             value = exissue.issue.send(callmethod)
           end
