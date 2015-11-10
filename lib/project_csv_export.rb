@@ -22,6 +22,8 @@ class ProjectCsvExport
         :parent_id => "parent_id",
         :is_private => "is_private",
         :actual_time => "calc.ActualTime",
+        :actual_first_date => "calc.ActualFirstDate",
+        :actual_last_date => "calc.ActualLastDate",
         :outlinelevel => "extend.OutlineLevel",
         :outlinenumber => "extend.OutlineNumber"
       }
@@ -61,7 +63,13 @@ class ProjectCsvExport
             calcname = callmethod[5,callmethod.length-5]
             case calcname
             when "ActualTime"
-              value = ""
+              value = TimeEntry.where(:issue_id => exissue.issue.id).sum(:hours).to_f
+            when "ActualFirstDate"
+Rails.logger.info("----- ActualFirstDate")
+              value = TimeEntry.where(:issue_id => exissue.issue.id).min(:spent_on)
+            when "ActualLastDate"
+Rails.logger.info("----- ActualLastDate")
+              value = TimeEntry.where(:issue_id => exissue.issue.id).max(:spent_on)
             end
           else
             value = exissue.issue.send(callmethod)
