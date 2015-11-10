@@ -177,7 +177,7 @@ class ProjectXmlExport
       }
     end
 
-    filename = "#{@project.name}-#{Time.now.strftime("%Y-%m-%d-%H-%M")}.xml"
+    filename = "#{@project.identifier}-#{Time.now.strftime("%Y-%m-%d-%H-%M")}.xml"
     return export.to_xml, filename
   end
 

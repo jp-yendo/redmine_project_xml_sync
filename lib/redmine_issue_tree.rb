@@ -30,7 +30,7 @@ Rails.logger.info("----- getNestIssues")
       extend_issue = ExtendIssue.new
       extend_issue.issue = issue
       extend_issue.EntryHour = nil
-      extend_issue.OutlineLevel = outlinelevel
+      extend_issue.OutlineLevel = (outlinelevel+1)
       extend_issue.OutlineNumber = outlinenumber + "." + (index+1).to_s
       result << extend_issue
 

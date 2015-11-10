@@ -14,7 +14,7 @@ class ProjectCsvExport
         :due_date => "due_date",
         :estimated_hours => "estimated_hours",
         :done_ratio => "done_ratio",
-        :assigned_to => "assigned_to_id",
+        :assigned_to => "assigned_to",
         :fixed_version => "fixed_version",
         :category => "category",
         :status => "status",
@@ -75,7 +75,7 @@ class ProjectCsvExport
       csvdata += csvline
     end
 
-    filename = "#{@project.name}-#{Time.now.strftime("%Y-%m-%d-%H-%M")}.csv"
+    filename = "#{@project.identifier}-#{Time.now.strftime("%Y-%m-%d-%H-%M")}.csv"
     return csvdata, filename
   end
 
