@@ -65,11 +65,9 @@ class ProjectCsvExport
             when "ActualTime"
               value = TimeEntry.where(:issue_id => exissue.issue.id).sum(:hours).to_f
             when "ActualFirstDate"
-Rails.logger.info("----- ActualFirstDate")
-              value = TimeEntry.where(:issue_id => exissue.issue.id).min(:spent_on)
+              value = TimeEntry.where(:issue_id => exissue.issue.id).minimum(:spent_on)
             when "ActualLastDate"
-Rails.logger.info("----- ActualLastDate")
-              value = TimeEntry.where(:issue_id => exissue.issue.id).max(:spent_on)
+              value = TimeEntry.where(:issue_id => exissue.issue.id).maximum(:spent_on)
             end
           else
             value = exissue.issue.send(callmethod)
@@ -77,7 +75,8 @@ Rails.logger.info("----- ActualLastDate")
           if value.nil?
             value = ""
           end
-        rescue
+        rescue Exception => ex
+          Rails.logger.info("Get value error: key:#{key.to_s} message:#{ex.message}")
           value = ""
         end
         csvline += "\""
