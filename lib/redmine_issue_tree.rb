@@ -14,11 +14,14 @@ private
     root_issues.each_with_index do |root_issue, index|
       extend_issue = ExtendIssue.new
       extend_issue.issue = root_issue
+      extend_issue.ChildrenCount = root_issue.children.count
       extend_issue.OutlineLevel = 1
       extend_issue.OutlineNumber = (index+1).to_s
       result << extend_issue
 
-      getNestIssues(root_issue, extend_issue.OutlineLevel, extend_issue.OutlineNumber, result)
+      if extend_issue.ChildrenCount > 0
+        getNestIssues(root_issue, extend_issue.OutlineLevel, extend_issue.OutlineNumber, result)
+      end
     end
   end
   
@@ -26,11 +29,14 @@ private
     issue.children.each_with_index do |issue, index|
       extend_issue = ExtendIssue.new
       extend_issue.issue = issue
+      extend_issue.ChildrenCount = issue.children.count
       extend_issue.OutlineLevel = (outlinelevel+1)
       extend_issue.OutlineNumber = outlinenumber + "." + (index+1).to_s
       result << extend_issue
 
-      getNestIssues(issue, extend_issue.OutlineLevel, extend_issue.OutlineNumber, result)
+      if extend_issue.ChildrenCount > 0
+        getNestIssues(issue, extend_issue.OutlineLevel, extend_issue.OutlineNumber, result)
+      end
     end
   end
 end
