@@ -616,26 +616,13 @@ private
     end
 
     if unique_attr == "id"
-      issues = [Issue.find_by_id(attr_value)]
+      issues = Issue.all.where(:id => attr_value)
     else
-      # Use IssueQuery class Redmine >= 2.3.0
-      begin
-        if Module.const_get('IssueQuery') && IssueQuery.is_a?(Class)
-          query_class = IssueQuery
-        end
-      rescue NameError
-        query_class = Query
-      end
-
-      query = query_class.new(:name => "_importer", :project => @project)
+      query = IssueQuery.new(:name => "_importer", :project_id => @project.id)
       query.add_filter("status_id", "*", [1])
       query.add_filter(unique_attr, "=", [attr_value])
 
-      issues = Issue.find :all,
-        :conditions => query.statement,
-        :limit => 2,
-        :include => [ :assigned_to, :status, :tracker, :project, :priority,
-                      :category, :fixed_version ]
+      issues = Issue.all.where(query.statement).limit(2)
     end
 
     if issues.size > 1
@@ -649,7 +636,7 @@ private
       if issues.size == 0
         raise NoIssueForUniqueValue, "No issue with #{unique_attr} of '#{attr_value}' found"
       end
-      issues.first
+      return issues.first
     end
   end
 
