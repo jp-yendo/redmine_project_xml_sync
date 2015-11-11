@@ -19,9 +19,9 @@ en:
   label_file_format: "File format settings"
   label_file_encoding: "Encoding"
 
-  label_upload_notice: "Select a CSV file to import. Import file must have a header row. Maximum size 4MB."
-  label_upload_splitter: "Field separator character"
-  label_upload_wrapper: "Field quoting character"
+  label_csv_import_notice: "Select a CSV file to import. Import file must have a header row. Maximum size 4MB."
+  label_csv_import_splitter: "Field separator character"
+  label_csv_import_wrapper: "Field quoting character"
   
   label_toplines: "Refer to top lines of %{value}："
   label_match_columns: "Matching Columns"

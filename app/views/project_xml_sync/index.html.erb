@@ -28,16 +28,16 @@
             "<option value=\"S\">SJIS</option>" \
             "<option value=\"N\">None</option>".html_safe %></p>
 
-      <p><label><%=l(:label_upload_splitter)%>:</label>
-        <%= text_field_tag "splitter", ',', {:size => 3, :maxlength => 1}%></p>
+      <p><label><%=l(:label_csv_import_splitter)%>:</label>
+        <%= text_field_tag "csv_import_splitter", ',', {:size => 3, :maxlength => 1}%></p>
 
-      <p><label><%=l(:label_upload_wrapper)%>:</label>
-        <%= text_field_tag "wrapper", '"', {:size => 3, :maxlength => 1}%></p>
+      <p><label><%=l(:label_csv_import_wrapper)%>:</label>
+        <%= text_field_tag "csv_import_wrapper", '"', {:size => 3, :maxlength => 1}%></p>
     </fieldset>
 
-    <label><%=l(:label_upload_notice)%></label><br/>
+    <label><%=l(:label_csv_import_notice)%></label><br/>
 
-    <%= file_field_tag 'file' %>
+    <%= file_field_tag 'csv_import_file' %>
     <%= submit_tag l(:button_analyze) %>
   <% end %>
   </p>

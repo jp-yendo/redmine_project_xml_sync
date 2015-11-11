@@ -15,17 +15,17 @@ class ProjectCsvImport
     # save import-in-progress data
     iip = CsvImportInProgress.new
     iip.user_id = User.current.id
-    iip.quote_char = params[:wrapper]
-    iip.col_sep = params[:splitter]
-    iip.encoding = params[:encoding]
+    iip.quote_char = params[:csv_import_wrapper]
+    iip.col_sep = params[:csv_import_splitter]
+    iip.encoding = params[:csv_import_encoding]
     iip.created = Time.new
-    iip.csv_data = params[:file].read unless params[:file].blank?
+    iip.csv_data = params[:csv_import_file].read unless params[:csv_import_file].blank?
     iip.save
 
     # Put the timestamp in the params to detect
     # users with two imports in progress
     @import_timestamp = iip.created.strftime("%Y-%m-%d %H:%M:%S")
-    @original_filename = params[:file].original_filename
+    @original_filename = params[:csv_import_file].original_filename
 
     validate_csv_data(iip.csv_data)
     return if @message[:error].present?

@@ -68,7 +68,7 @@ class ProjectXmlSyncController < ApplicationController
       csv, name = ProjectCsvExport.generate_simple_csv(@project)
       case params[:csv_export_encoding]
       when "S"
-        csv = csv.encode("Shift_JIS")
+        csv = csv.encode(Encoding::SJIS)
       end
       send_data csv, :filename => name, :disposition => :attachment
     rescue Exception => ex

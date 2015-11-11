@@ -27,6 +27,10 @@ class ProjectCsvExport
         :actual_progress => "calc.ActualProgress",
         :days_early => "calc.DaysEarly",
         :days_delay => "calc.DaysDelay",
+        :count_total_issue => "calc.CountTotalIssue",
+        :count_closed_issue => "calc.CountClosedIssue",
+        :days_max_early => "calc.DaysMaxEarly",
+        :days_max_delay => "calc.DaysMaxDelay",
         :isScheduled => "calc.isScheduled",
         :children_count => "extend.ChildrenCount",
         :outlinelevel => "extend.OutlineLevel",
@@ -81,6 +85,14 @@ class ProjectCsvExport
               value = issue_progress.days_early
             when "DaysDelay"
               value = issue_progress.days_delay
+            when "CountTotalIssue"
+              value = issue_progress.count_total_issue
+            when "CountClosedIssue"
+              value = issue_progress.count_closed_issue
+            when "DaysMaxEarly"
+              value = issue_progress.days_max_early
+            when "DaysMaxDelay"
+              value = issue_progress.days_max_delay
             when "isScheduled"
               value = issue_progress.isScheduled
             end

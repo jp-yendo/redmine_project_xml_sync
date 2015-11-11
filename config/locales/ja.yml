@@ -19,9 +19,9 @@ ja:
   label_file_format: "ファイルフォーマットのオプション"
   label_file_encoding: "エンコーディング"
 
-  label_upload_notice: "CSV ファイルを選択してください。ヘッダー行が必要です。最大サイズは 4MB です。"
-  label_upload_splitter: "フィールドの区切り文字"
-  label_upload_wrapper: "引用文字"
+  label_csv_import_notice: "CSV ファイルを選択してください。ヘッダー行が必要です。最大サイズは 4MB です。"
+  label_csv_import_splitter: "フィールドの区切り文字"
+  label_csv_import_wrapper: "引用文字"
 
   label_toplines: "%{value} の先頭行:"
   label_match_columns: "各列のフィールドとの対応"
