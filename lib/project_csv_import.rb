@@ -7,8 +7,8 @@ class ProjectCsvImport
                  :start_date, :due_date, :done_ratio, :estimated_hours,
                  :parent_issue, :watchers ]
 
-  def self.match(project)
-    initValues(project)
+  def self.match(targetproject, params)
+    initValues(targetproject)
 
     # Delete existing iip to ensure there can't be two iips for a user
     CsvImportInProgress.delete_all(["user_id = ?",User.current.id])
@@ -27,52 +27,51 @@ class ProjectCsvImport
     @import_timestamp = iip.created.strftime("%Y-%m-%d %H:%M:%S")
     @original_filename = params[:file].original_filename
 
-    flash.delete(:error)
     validate_csv_data(iip.csv_data)
-    return if flash[:error].present?
+    return if @message[:error].present?
 
     sample_data(iip)
-    return if flash[:error].present?
+    return if @message[:error].present?
 
     set_csv_headers(iip)
-    return if flash[:error].present?
+    return if @message[:error].present?
 
+    i18 = Object.new
+    i18.extend Redmine::I18n
 
     # fields
     @attrs = Array.new
     ISSUE_ATTRS.each do |attr|
-      #@attrs.push([l_has_string?("field_#{attr}".to_sym) ? l("field_#{attr}".to_sym) : attr.to_s.humanize, attr])
-      @attrs.push([l_or_humanize(attr, :prefix=>"field_"), attr])
+      @attrs.push([i18.l_or_humanize(attr, :prefix=>"field_"), attr])
     end
     @project.all_issue_custom_fields.each do |cfield|
       @attrs.push([cfield.name, cfield.name])
     end
     IssueRelation::TYPES.each_pair do |rtype, rinfo|
-      @attrs.push([l_or_humanize(rinfo[:name]),rtype])
+      @attrs.push([i18.l_or_humanize(rinfo[:name]),rtype])
     end
     @attrs.sort!
+    
+    return @import_timestamp, @original_filename, @headers, @attrs, @samples
   end
 
-  def self.result(project)
-    # used for bookkeeping
-    flash.delete(:error)
-
-    initValues(project)
+  def self.result(targetproject, params)
+    initValues(targetproject)
 
     # Used to optimize some work that has to happen inside the loop
     unique_attr_checked = false
 
     # Retrieve saved import data
-    iip = ImportInProgress.find_by_user_id(User.current.id)
+    iip = CsvImportInProgress.find_by_user_id(User.current.id)
     if iip == nil
-      flash[:error] = "No import is currently in progress"
-      return
+      @message[:error] = "No import is currently in progress"
+      return @messages, @handle_count, @affect_projects_issues, @failed_count, @headers, @failed_issues
     end
     if iip.created.strftime("%Y-%m-%d %H:%M:%S") != params[:import_timestamp]
-      flash[:error] = "You seem to have started another import " \
+      @message[:error] = "You seem to have started another import " \
         "since starting this one. " \
         "This import cannot be completed"
-      return
+      return @messages, @handle_count, @affect_projects_issues, @failed_count, @headers, @failed_issues
     end
 
     # which options were turned on?
@@ -100,16 +99,19 @@ class ProjectCsvImport
     # validation!
     # if the unique_attr is blank but any of the following opts is turned on,
     if unique_attr.blank?
+      i18 = Object.new
+      i18.extend Redmine::I18n
+
       if update_issue
-        flash[:error] = l(:text_rmi_specify_unique_field_for_update)
+        @message[:error] = i18.l(:text_rmi_specify_unique_field_for_update)
       elsif @attrs_map["parent_issue"].present?
-        flash[:error] = l(:text_rmi_specify_unique_field_for_column,
-                          :column => l(:field_parent_issue))
+        @message[:error] = i18.l(:text_rmi_specify_unique_field_for_column,
+                          :column => i18.l(:field_parent_issue))
       else IssueRelation::TYPES.each_key.any? { |t| @attrs_map[t].present? }
         IssueRelation::TYPES.each_key do |t|
           if @attrs_map[t].present?
-            flash[:error] = l(:text_rmi_specify_unique_field_for_column,
-                              :column => l("label_#{t}".to_sym))
+            @message[:error] = i18.l(:text_rmi_specify_unique_field_for_column,
+                              :column => i18.l("label_#{t}".to_sym))
           end
         end
       end
@@ -118,14 +120,15 @@ class ProjectCsvImport
     # validate that the id attribute has been selected
     if use_issue_id
       if @attrs_map["id"].blank?
-        flash[:error] = "You must specify a column mapping for id" \
+        @message[:error] = "You must specify a column mapping for id" \
           " when importing using provided issue ids."
       end
     end
 
     # if error is full, NOP
-    return if flash[:error].present?
-
+    if @message[:error].present?
+      return @messages, @handle_count, @affect_projects_issues, @failed_count, @headers, @failed_issues
+    end
 
     csv_opt = {:headers=>true,
                :encoding=>iip.encoding,
@@ -153,7 +156,7 @@ class ProjectCsvImport
         tracker = Tracker.find_by_name(fetch("tracker", row))
         status = IssueStatus.find_by_name(fetch("status", row))
         author = if @attrs_map["author"]
-                   user_for_login!(fetch("author", row))
+                   user_for_login!(fetch("author", row), params[:use_anonymous])
                  else
                    User.current
                  end
@@ -171,7 +174,7 @@ class ProjectCsvImport
         end
 
         if fetch("assigned_to", row).present?
-          assigned_to = user_for_login!(fetch("assigned_to", row))
+          assigned_to = user_for_login!(fetch("assigned_to", row), params[:use_anonymous])
         else
           assigned_to = nil
         end
@@ -188,19 +191,28 @@ class ProjectCsvImport
 
         watchers = fetch("watchers", row)
 
-        issue.project_id = project != nil ? project.id : @project.id
-        issue.tracker_id = tracker != nil ? tracker.id : default_tracker
-        issue.author_id = author != nil ? author.id : User.current.id
+        if !project.nil?
+          issue.project_id = project.id
+        else
+          issue.project_id = @project.id
+        end
+        if !tracker.nil?
+          issue.tracker_id = tracker.id
+        else
+          issue.tracker_id = default_tracker
+        end
+        if !author.nil?
+          issue.author_id = author.id
+        else
+          issue.author_id = User.current.id
+        end
       rescue ActiveRecord::RecordNotFound
         log_failure(row, "Warning: When adding issue #{@failed_count+1} below," \
                     " the #{@unfound_class} #{@unfound_key} was not found")
         raise RowFailed
       end
 
-
-
       begin
-
         unique_attr = translate_unique_attr(issue, unique_field, unique_attr, unique_attr_checked)
 
         issue, journal = handle_issue_update(issue, row, author, status, update_other_project, journal_field,
@@ -212,13 +224,11 @@ class ProjectCsvImport
 
         assign_issue_attrs(issue, category, fixed_version_id, assigned_to, status, row, priority)
         handle_parent_issues(issue, row, ignore_non_exist, unique_attr)
-        handle_custom_fields(add_versions, issue, project, row)
-        handle_watchers(issue, row, watchers)
+        handle_custom_fields(add_versions, issue, project, row, params[:use_anonymous])
+        handle_watchers(issue, row, watchers, params[:use_anonymous])
       rescue RowFailed
         next
       end
-
-
 
       begin
         issue_saved = issue.save
@@ -302,7 +312,13 @@ class ProjectCsvImport
     iip.delete
 
     # Garbage prevention: clean up iips older than 3 days
-    ImportInProgress.delete_all(["created < ?",Time.new - 3*24*60*60])
+    CsvImportInProgress.delete_all(["created < ?",Time.new - 3*24*60*60])
+
+    return @messages, @handle_count, @affect_projects_issues, @failed_count, @headers, @failed_issues
+  end
+
+  def self.message
+    return @message
   end
 
 private
@@ -312,6 +328,8 @@ private
     @settings ||= Setting.plugin_redmine_project_xml_sync
     @ignore_fields = @settings[:export][:ignore_fields].select { |attr, val| val == '1' }.keys
 
+    @message = {:notice => nil, :warning => nil, :error => nil}
+    
     @handle_count = 0
     @update_count = 0
     @skip_count = 0
@@ -447,13 +465,13 @@ private
     end
   end
   
-  def self.handle_watchers(issue, row, watchers)
+  def self.handle_watchers(issue, row, watchers, use_anonymous)
     watcher_failed_count = 0
     if watchers
       addable_watcher_users = issue.addable_watcher_users
       watchers.split(',').each do |watcher|
         begin
-          watcher_user = user_id_for_login!(watcher)
+          watcher_user = user_id_for_login!(watcher, use_anonymous)
           if issue.watcher_users.include?(watcher_user)
             next
           end
@@ -474,7 +492,7 @@ private
     raise RowFailed if watcher_failed_count > 0
   end
 
-  def self.handle_custom_fields(add_versions, issue, project, row)
+  def self.handle_custom_fields(add_versions, issue, project, row, use_anonymous)
     custom_failed_count = 0
     issue.custom_field_values = issue.available_custom_fields.inject({}) do |h, cf|
       value = row[@attrs_map[cf.name]]
@@ -485,7 +503,7 @@ private
           begin
             value = case cf.field_format
                       when 'user'
-                        user_id_for_login!(value).to_s
+                        user_id_for_login!(value, use_anonymous).to_s
                       when 'version'
                         version_id_for_name!(project, value, add_versions).to_s
                       when 'date'
@@ -520,14 +538,9 @@ private
     @messages << msg
   end
 
-  def self.flash_message(type, text)
-    flash[type] ||= ""
-    flash[type] += "#{text}<br/>"
-  end
-
   def self.validate_csv_data(csv_data)
     if csv_data.lines.to_a.size <= 1
-      flash[:error] = 'No data line in your CSV, check the encoding of the file'\
+      @message[:error] = 'No data line in your CSV, check the encoding of the file'\
         '<br/><br/>Header :<br/>'.html_safe + csv_data
 
       redirect_to project_importer_path(:project_id => @project)
@@ -563,7 +576,7 @@ private
           csv_data_lines[@samples.size + 1]
       end
 
-      flash[:error] = error_message
+      @message[:error] = error_message
 
       redirect_to project_importer_path(:project_id => @project)
 
@@ -584,7 +597,7 @@ private
     }
 
     if missing_header_columns.present?
-      flash[:error] = "Column header missing : #{missing_header_columns}" \
+      @message[:error] = "Column header missing : #{missing_header_columns}" \
       " / #{@headers.size} #{'<br/><br/>Header :<br/>'.html_safe}" \
       " #{iip.csv_data.lines.to_a[0]}"
 
@@ -642,13 +655,13 @@ private
 
   # Returns the id for the given user or raises RecordNotFound
   # Implements a cache of users based on login name
-  def self.user_for_login!(login)
+  def self.user_for_login!(login, use_anonymous)
     begin
       if !@user_by_login.has_key?(login)
         @user_by_login[login] = User.find_by_login!(login)
       end
     rescue ActiveRecord::RecordNotFound
-      if params[:use_anonymous]
+      if use_anonymous
         @user_by_login[login] = User.anonymous()
       else
         @unfound_class = "User"
@@ -659,8 +672,8 @@ private
     @user_by_login[login]
   end
 
-  def self.user_id_for_login!(login)
-    user = user_for_login!(login)
+  def self.user_id_for_login!(login, use_anonymous)
+    user = user_for_login!(login, use_anonymous)
     user ? user.id : nil
   end
 

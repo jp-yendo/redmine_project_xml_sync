@@ -10,7 +10,7 @@ end
 class ProjectXmlSyncController < ApplicationController
   unloadable
 
-  before_filter :find_project, only: [:index, :analyze, :import_results, :export, :csv_import_match, :csv_import_result, :csv_export]
+  before_filter :find_project, only: [:index, :analyze, :import_results, :export, :csv_import_match, :csv_import_results, :csv_export]
 #  before_filter :find_project, :get_plugin_settings, only: [:index, :analyze, :import_results, :export]
   before_filter :authorize, :except => :analyze
 #  before_filter :get_import_settings, :only => [:index, :analyze, :import_results]
@@ -54,13 +54,13 @@ class ProjectXmlSyncController < ApplicationController
   end
 
   def csv_import_match
-    message = ProjectCsvImport.match(@project)
-    show_message(message)
+    @import_timestamp, @original_filename, @headers, @attrs, @samples = ProjectCsvImport.match(@project, params)
+    show_message(ProjectCsvImport.message)
   end
 
-  def csv_import_result
-    message = ProjectCsvImport.result(@project)
-    show_message(message)
+  def csv_import_results
+    @messages, @handle_count, @affect_projects_issues, @failed_count, @headers, @failed_issues = ProjectCsvImport.result(@project, params)
+    show_message(ProjectCsvImport.message)
   end
   
   def csv_export

@@ -42,7 +42,7 @@ Redmine::Plugin.register :redmine_project_xml_sync do
   }, partial: 'settings/project_xml_sync_settings'
 
   project_module :project_xml_sync do
-    permission :import_issues_from_xml, project_xml_sync: [:index, :analyze, :import_results, :csv_import_match, :csv_import_result]
+    permission :import_issues_from_xml, project_xml_sync: [:index, :analyze, :import_results, :csv_import_match, :csv_import_results]
     permission :export_issues_to_xml, project_xml_sync: [:index, :export, :csv_export]
   end
 

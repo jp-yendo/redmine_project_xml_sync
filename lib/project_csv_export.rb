@@ -19,7 +19,7 @@ class ProjectCsvExport
         :category => "category",
         :status => "status",
         :priority => "priority",
-        :parent_id => "parent_id",
+        :parent_issue => "parent_id",
         :is_private => "is_private",
         :actual_time => "calc.ActualTime",
         :actual_first_date => "calc.ActualFirstDate",
