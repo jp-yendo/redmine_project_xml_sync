@@ -543,7 +543,7 @@ private
       @message[:error] = 'No data line in your CSV, check the encoding of the file'\
         '<br/><br/>Header :<br/>'.html_safe + csv_data
 
-      redirect_to project_importer_path(:project_id => @project)
+      redirect_to :action => 'csv_import_results', :id => @project
 
       return
     end
@@ -578,7 +578,7 @@ private
 
       @message[:error] = error_message
 
-      redirect_to project_importer_path(:project_id => @project)
+      redirect_to :action => 'csv_import_results', :id => @project
 
       return
     end
@@ -601,7 +601,7 @@ private
       " / #{@headers.size} #{'<br/><br/>Header :<br/>'.html_safe}" \
       " #{iip.csv_data.lines.to_a[0]}"
 
-      redirect_to project_importer_path(:project_id => @project)
+      redirect_to :action => 'csv_import_results', :id => @project
 
       return
     end
