@@ -105,12 +105,16 @@ class ProjectXmlExport
           end
         }
         xml.Assignments {
-          flatissues.select { |extend_issue| extend_issue.issue.assigned_to_id? && extend_issue.issue.leaf? }.each do |extend_issue|
+          flatissues.select { |extend_issue| extend_issue.issue.leaf? }.each do |extend_issue|
             issue = extend_issue.issue
             xml.Assignment {
               xml.TaskUID @task_id_to_uid[issue.id]
-              xml.ResourceUID @resource_id_to_uid[issue.assigned_to_id]
-              unless ignore_field?(:estimated_hours) && !issue.leaf?
+              if !issue.assigned_to.nil?
+                xml.ResourceUID @resource_id_to_uid[issue.assigned_to_id]
+              else
+                xml.ResourceUID 0
+              end
+              unless ignore_field?(:estimated_hours)
                 time = get_scorm_time(issue.estimated_hours)
                 xml.Work time
                 xml.RegularWork time
@@ -188,37 +192,30 @@ private
       xml.ID id
       xml.Name issue.subject
       xml.Notes issue.description unless ignore_field?(:description)
-      xml.Active 1
       xml.IsNull 0
       xml.CreateDate issue.created_on.to_s(:project_xml)
+      xml.WBS(extend_issue.OutlineNumber)
+      xml.OutlineNumber extend_issue.OutlineNumber
+      xml.OutlineLevel extend_issue.OutlineLevel
       xml.HyperlinkAddress '' #issue_url(issue)
       xml.Priority(ignore_field?(:priority) ? 500 : get_priority_value(issue.priority.name))
-      start_date = issue.next_working_date(issue.start_date || issue.created_on.to_date)
-      xml.Start start_date.to_time.to_s(:project_xml)
-      finish_date = if issue.due_date
-                      if issue.next_working_date(issue.due_date).day == start_date.day
-                        start_date.next
-                      else
-                        issue.next_working_date(issue.due_date)
-                      end
+      start_date =  if !issue.start_date.nil?
+                      issue.start_date
                     else
-                      start_date.next
+                      issue.created_on.to_date
+                    end
+      xml.Start start_date.to_time.to_s(:project_xml)
+      finish_date = if !issue.due_date.nil?
+                      issue.due_date
+                    else
+                      start_date
                     end
       xml.Finish finish_date.to_time.to_s(:project_xml)
-      xml.ManualStart start_date.to_time.to_s(:project_xml)
-      xml.ManualFinish finish_date.to_time.to_s(:project_xml)
-      xml.EarlyStart start_date.to_time.to_s(:project_xml)
-      xml.EarlyFinish finish_date.to_time.to_s(:project_xml)
-      xml.LateStart start_date.to_time.to_s(:project_xml)
-      xml.LateFinish finish_date.to_time.to_s(:project_xml)
-      time = get_scorm_time(issue.estimated_hours)
-      xml.Work time
-      #xml.Duration time
-      #xml.ManualDuration time
-      #xml.RemainingDuration time
-      #xml.RemainingWork time
-      #xml.DurationFormat 7
-      xml.ActualWork get_scorm_time(issue.total_spent_hours)
+      xml.PercentComplete issue.done_ratio
+      estimated_time = get_scorm_time(issue.estimated_hours)
+      xml.Duration estimated_time
+      xml.DurationFormat 7
+      xml.ActualDuration get_scorm_time(issue.total_spent_hours)
       xml.Milestone 0
       xml.FixedCostAccrual 3
       xml.ConstraintType 2
@@ -226,30 +223,13 @@ private
       xml.IgnoreResourceCalendar 0
       parent = issue.leaf? ? 0 : 1
       xml.Summary(parent)
-      #xml.Critical(parent)
       xml.Rollup(parent)
-      #xml.Type(parent)
-      if @export_versions && issue.fixed_version_id
-        xml.PredecessorLink {
-          xml.PredecessorUID @version_id_to_uid[issue.fixed_version_id]
-          xml.CrossProject 0
-        }
-      end
-      if issue.relations_to_ids.any?
-        issue.relations.select { |ir| ir.relation_type == 'precedes' }.each do |relation|
-          xml.PredecessorLink {
-            xml.PredecessorUID @task_id_to_uid[relation.issue_from_id]
-            if issue.project_id == relation.issue_from.project_id
-              xml.CrossProject 0
-            else
-              xml.CrossProject 1
-              xml.CrossProjectName relation.issue_from.project.name
-            end
-            xml.LinkLag (relation.delay * 4800)
-            xml.LagFormat 7
-          }
-        end
-      end
+      xml.Active 1
+      xml.Manual 1
+      xml.ManualStart start_date.to_time.to_s(:project_xml)
+      xml.ManualFinish finish_date.to_time.to_s(:project_xml)
+      xml.ManualDuration estimated_time
+
       xml.ExtendedAttribute {
         xml.FieldID 188744000
         xml.Value issue.tracker.name
@@ -278,9 +258,6 @@ private
           xml.Value ""
         end
       }
-      xml.WBS(extend_issue.OutlineNumber)
-      xml.OutlineNumber extend_issue.OutlineNumber
-      xml.OutlineLevel extend_issue.OutlineLevel
     }
   end
 end
