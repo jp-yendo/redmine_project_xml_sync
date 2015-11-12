@@ -262,6 +262,22 @@ private
         xml.FieldID 188744002
         xml.Value issue.status.name
       }
+      xml.ExtendedAttribute {
+        xml.FieldID 188744003
+        if !issue.fixed_version.nil?
+          xml.Value issue.fixed_version.name
+        else
+          xml.Value ""
+        end
+      }
+      xml.ExtendedAttribute {
+        xml.FieldID 188744004
+        if !issue.category.nil?
+          xml.Value issue.category.name
+        else
+          xml.Value ""
+        end
+      }
       xml.WBS(extend_issue.OutlineNumber)
       xml.OutlineNumber extend_issue.OutlineNumber
       xml.OutlineLevel extend_issue.OutlineLevel
