@@ -1,49 +1,22 @@
 include ProjectXmlSyncHelper
 
-#redmine          project xml
-#'description'    'notes'
-#'start_date'     'start'
-#'due_date'       'finish'
-#'estimated_hours''duration'
-#'subject'        'title'
-#'done_ratio'     'percentcomplete'
-
-#        <Type>0</Type>
-#        <Priority>500</Priority>
-#        <Duration>PT520H0M0S</Duration>
-#        <DurationFormat>7</DurationFormat>
-#        <ResumeValid>0</ResumeValid>
-#        <EffortDriven>1</EffortDriven>
-#        <Recurring>0</Recurring>
-#        <OverAllocated>0</OverAllocated>
-#        <Estimated>0</Estimated>
-#        <Critical>1</Critical>
-#        <IsSubproject>0</IsSubproject>
-#        <IsSubprojectReadOnly>0</IsSubprojectReadOnly>
-#        <ExternalTask>0</ExternalTask>
-#        <RemainingDuration>PT520H0M0S</RemainingDuration>
-#        <CalendarUID>-1</CalendarUID>
-#        <LevelAssignments>0</LevelAssignments>
-#        <LevelingCanSplit>0</LevelingCanSplit>
-#        <LevelingDelay>0</LevelingDelay>
-#        <LevelingDelayFormat>7</LevelingDelayFormat>
-#        <HideBar>0</HideBar>
-#        <EarnedValueMethod>0</EarnedValueMethod>
-#        <Manual>0</Manual>
-
 class ProjectXmlExport
   def self.generate_xml(project)
     initValues(project)
+
+    default_calendar_uid = @uid
     
     export = Nokogiri::XML::Builder.new(encoding: 'UTF-8') do |xml|
       resources = @project.assignable_users
+      flatissues = RedmineIssueTree.getFlatIssuesFromProject(@project)
+
       xml.Project(:xmlns=>"http://schemas.microsoft.com/project") {
         xml.Title @project.name
         xml.ExtendedAttributes {
           xml.ExtendedAttribute {
             xml.FieldID 188744000
             xml.FieldName 'Text14'
-            xml.Alias @settings[:redmine_status_alias]
+            xml.Alias @settings[:tracker_alias]
           }
           xml.ExtendedAttribute {
             xml.FieldID 188744001
@@ -53,16 +26,25 @@ class ProjectXmlExport
           xml.ExtendedAttribute {
             xml.FieldID 188744002
             xml.FieldName 'Text16'
-            xml.Alias @settings[:tracker_alias]
+            xml.Alias @settings[:redmine_status_alias]
+          }
+          xml.ExtendedAttribute {
+            xml.FieldID 188744003
+            xml.FieldName 'Text17'
+            xml.Alias @settings[:redmine_version_alias]
+          }
+          xml.ExtendedAttribute {
+            xml.FieldID 188744004
+            xml.FieldName 'Text18'
+            xml.Alias @settings[:redmine_category_alias]
           }
         }
         xml.Calendars {
+          default_calendar_uid = @uid
           xml.Calendar {
             xml.UID @uid
             xml.Name 'Standard'
             xml.IsBaseCalendar 1
-            xml.IsBaselineCalendar 0
-            xml.BaseCalendarUID 0
             xml.Weekdays {
               (1..7).each do |day|
                 xml.Weekday {
@@ -73,12 +55,12 @@ class ProjectXmlExport
                     xml.DayWorking 1
                     xml.WorkingTimes {
                       xml.WorkingTime {
-                        xml.FromTime '09:00:00'
-                        xml.ToTime '13:00:00'
+                        xml.FromTime '08:00:00'
+                        xml.ToTime '12:00:00'
                       }
                       xml.WorkingTime {
-                        xml.FromTime '14:00:00'
-                        xml.ToTime '18:00:00'
+                        xml.FromTime '13:00:00'
+                        xml.ToTime '17:00:00'
                       }
                     }
                   end
@@ -86,40 +68,16 @@ class ProjectXmlExport
               end
             }
           }
-          resources.each do |resource|
-            @uid += 1
-            @calendar_id_to_uid[resource.id] = @uid
-            xml.Calendar {
-              xml.UID @uid
-              xml.Name resource.login
-              xml.IsBaseCalendar 0
-              xml.IsBaselineCalendar 0
-              xml.BaseCalendarUID 1
-            }
-          end
         }
 
         xml.Tasks {
-#          xml.Task {
-#            xml.UID 0
-#            xml.ID 0
-#            xml.ConstraintType 0
-#            xml.OutlineNumber 0
-#            xml.OutlineLevel 0
-#            xml.Name @project.name
-#            xml.Type 1
-#            xml.CreateDate @project.created_on.to_s(:project_xml)
-#          }
-
-          if @export_versions
-            versions = @query ? Version.where(id: @query_issues.map(&:fixed_version_id).uniq) : @project.versions
-            versions.each { |version| write_version(xml, version) }
+          flatissues.each_with_index do |extend_issue, id|
+            @uid += 1
+            @task_id_to_uid[extend_issue.issue.id] = @uid
+            write_task(xml, extend_issue, id.next)
           end
-
-          issues = (@query_issues || @project.issues.visible)
-          nested_issues = determine_nesting issues, versions.try(:count)
-          nested_issues.each_with_index { |issue, id| write_task(xml, issue, id) }
         }
+
         xml.Resources {
           xml.Resource {
             xml.UID 0
@@ -127,48 +85,46 @@ class ProjectXmlExport
             xml.Type 1
             xml.IsNull 0
           }
+
           resources.each_with_index do |resource, id|
-            spent_time = TimeEntry.where(user_id: resource.id).inject(0){|sum, te| sum + te.hours }
+            spent_time = TimeEntry.where(:user_id => resource.id, :project_id => @project.id).sum(:hours)
             @uid += 1
             @resource_id_to_uid[resource.id] = @uid
             xml.Resource {
               xml.UID @uid
               xml.ID id.next
-              xml.Name resource.login
+              xml.Name resource.name
               xml.Type 1
               xml.IsNull 0
               xml.MaxUnits 1.00
               xml.PeakUnits 1.00
               xml.IsEnterprise 1
-              xml.CalendarUID @calendar_id_to_uid[resource.id]
+              xml.CalendarUID default_calendar_uid
               xml.ActualWork get_scorm_time(spent_time) unless spent_time.zero?
             }
           end
         }
         xml.Assignments {
-          source_issues = @query ? @query_issues : @project.issues
-          source_issues.select { |issue| issue.assigned_to_id? && issue.leaf? }.each do |issue|
-            @uid += 1
+          flatissues.select { |extend_issue| extend_issue.issue.assigned_to_id? && extend_issue.issue.leaf? }.each do |extend_issue|
+            issue = extend_issue.issue
             xml.Assignment {
+              xml.TaskUID @task_id_to_uid[issue.id]
+              xml.ResourceUID @resource_id_to_uid[issue.assigned_to_id]
               unless ignore_field?(:estimated_hours) && !issue.leaf?
                 time = get_scorm_time(issue.estimated_hours)
                 xml.Work time
                 xml.RegularWork time
                 xml.RemainingWork time
               end
-              xml.UID @uid
-              xml.TaskUID @task_id_to_uid[issue.id]
-              xml.ResourceUID @resource_id_to_uid[issue.assigned_to_id]
               xml.PercentWorkComplete issue.done_ratio unless ignore_field?(:done_ratio)
               xml.Units 1
               unless issue.total_spent_hours.zero?
                 xml.TimephasedData {
                   xml.Type 2
-                  xml.UID @uid
-                  xml.Unit 2
-                  xml.Value get_scorm_time(issue.total_spent_hours)
                   xml.Start (issue.start_date || issue.created_on).to_time.to_s(:project_xml)
                   xml.Finish ((issue.start_date || issue.created_on).to_time + (issue.total_spent_hours.to_i).hours).to_s(:project_xml)
+                  xml.Unit 2
+                  xml.Value get_scorm_time(issue.total_spent_hours)
                 }
               end
             }
@@ -185,49 +141,17 @@ private
   def self.initValues(project)
     @project = project
 
-    @settings ||= Setting.plugin_redmine_project_xml_sync
-    @export_versions = @settings[:export][:sync_versions] == '1'
-    @ignore_fields = @settings[:export][:ignore_fields].select { |attr, val| val == '1' }.keys
+    @settings = Setting.plugin_redmine_project_xml_sync
+    @settings_export = @settings[:export]
+    @ignore_fields = @settings_export[:ignore_fields].select { |attr, val| val == '1' }.keys
 
     @uid = 1
     @resource_id_to_uid = {}
     @task_id_to_uid = {}
-    @version_id_to_uid = {}
-    @calendar_id_to_uid = {}
   end
 
   def self.ignore_field?(field)
     field.to_s.in?(@ignore_fields)
-  end
-  
-  def self.determine_nesting(issues, versions_count)
-    versions_count ||= 0
-    nested_issues = []
-    leveled_tasks = issues.preload(:status, :priority, :tracker).sort_by(&:id).group_by(&:lft)
-#    leveled_tasks.each do |level, grouped_issues|
-#      grouped_issues.each do |issue|
-    leveled_tasks.sort_by{ |key| key }.each do |level, grouped_issues|
-      grouped_issues.each_with_index do |issue, index|
-        outlinenumber = if issue.child?
-                          "#{nested_issues.detect{ |struct| struct.id == issue.parent_id }.try(:outlinenumber)}.#{leveled_tasks[level].index(issue).next}"
-                        else
-                          (leveled_tasks[level].index(issue).next + versions_count).to_s
-                        end
-        nested_issues << ExportTask.new(issue, leveled_tasks[level].index(issue).next, outlinenumber)
-      end
-    end
-    return nested_issues.sort_by!(&:outlinenumber)
-  end
-
-  def self.get_priority_value(priority_name)
-    value = case priority_name
-            when 'Minimal' then 100
-            when 'Low' then 300
-            when 'Normal' then 500
-            when 'High' then 700
-            when 'Immediate' then 900
-            end
-    return value
   end
 
   def self.get_scorm_time time
@@ -238,26 +162,44 @@ private
     return "PT#{hours}H#{minutes}M0S"
   end
 
-  def self.write_task(xml, struct, id)
-    @uid += 1
-    @task_id_to_uid[struct.id] = @uid
+  def self.get_priority_value(priority_name)
+    value = case priority_name
+            when 'Low','低め' then 300
+            when 'Normal','通常' then 500
+            when 'High','高め' then 700
+            when 'Urgent','急いで' then 800
+            when 'Immediate','今すぐ' then 900
+            else 500
+            end
+    return value
+  end
+
+  def self.write_task(xml, extend_issue, id)
+#redmine          project xml
+#'description'    'notes'
+#'start_date'     'start'
+#'due_date'       'finish'
+#'estimated_hours''duration'
+#'subject'        'title'
+#'done_ratio'     'percentcomplete'
+    issue = extend_issue.issue
     xml.Task {
       xml.UID @uid
-      xml.ID id.next
-      xml.Name(struct.subject)
-      xml.Notes(struct.description) unless ignore_field?(:description)
+      xml.ID id
+      xml.Name issue.subject
+      xml.Notes issue.description unless ignore_field?(:description)
       xml.Active 1
       xml.IsNull 0
-      xml.CreateDate struct.created_on.to_s(:project_xml)
-      xml.HyperlinkAddress '' #issue_url(struct.issue)
-      xml.Priority(ignore_field?(:priority) ? 500 : get_priority_value(struct.priority.name))
-      start_date = struct.issue.next_working_date(struct.start_date || struct.created_on.to_date)
+      xml.CreateDate issue.created_on.to_s(:project_xml)
+      xml.HyperlinkAddress '' #issue_url(issue)
+      xml.Priority(ignore_field?(:priority) ? 500 : get_priority_value(issue.priority.name))
+      start_date = issue.next_working_date(issue.start_date || issue.created_on.to_date)
       xml.Start start_date.to_time.to_s(:project_xml)
-      finish_date = if struct.due_date
-                      if struct.issue.next_working_date(struct.due_date).day == start_date.day
+      finish_date = if issue.due_date
+                      if issue.next_working_date(issue.due_date).day == start_date.day
                         start_date.next
                       else
-                        struct.issue.next_working_date(struct.due_date)
+                        issue.next_working_date(issue.due_date)
                       end
                     else
                       start_date.next
@@ -269,35 +211,35 @@ private
       xml.EarlyFinish finish_date.to_time.to_s(:project_xml)
       xml.LateStart start_date.to_time.to_s(:project_xml)
       xml.LateFinish finish_date.to_time.to_s(:project_xml)
-      time = get_scorm_time(struct.estimated_hours)
+      time = get_scorm_time(issue.estimated_hours)
       xml.Work time
       #xml.Duration time
       #xml.ManualDuration time
       #xml.RemainingDuration time
       #xml.RemainingWork time
       #xml.DurationFormat 7
-      xml.ActualWork get_scorm_time(struct.total_spent_hours)
+      xml.ActualWork get_scorm_time(issue.total_spent_hours)
       xml.Milestone 0
       xml.FixedCostAccrual 3
       xml.ConstraintType 2
       xml.ConstraintDate start_date.to_time.to_s(:project_xml)
       xml.IgnoreResourceCalendar 0
-      parent = struct.leaf? ? 0 : 1
+      parent = issue.leaf? ? 0 : 1
       xml.Summary(parent)
       #xml.Critical(parent)
       xml.Rollup(parent)
       #xml.Type(parent)
-      if @export_versions && struct.fixed_version_id
+      if @export_versions && issue.fixed_version_id
         xml.PredecessorLink {
-          xml.PredecessorUID @version_id_to_uid[struct.fixed_version_id]
+          xml.PredecessorUID @version_id_to_uid[issue.fixed_version_id]
           xml.CrossProject 0
         }
       end
-      if struct.relations_to_ids.any?
-        struct.relations.select { |ir| ir.relation_type == 'precedes' }.each do |relation|
+      if issue.relations_to_ids.any?
+        issue.relations.select { |ir| ir.relation_type == 'precedes' }.each do |relation|
           xml.PredecessorLink {
             xml.PredecessorUID @task_id_to_uid[relation.issue_from_id]
-            if struct.project_id == relation.issue_from.project_id
+            if issue.project_id == relation.issue_from.project_id
               xml.CrossProject 0
             else
               xml.CrossProject 1
@@ -310,50 +252,19 @@ private
       end
       xml.ExtendedAttribute {
         xml.FieldID 188744000
-        xml.Value struct.status.name
+        xml.Value issue.tracker.name
       }
       xml.ExtendedAttribute {
         xml.FieldID 188744001
-        xml.Value struct.id
+        xml.Value issue.id
       }
       xml.ExtendedAttribute {
         xml.FieldID 188744002
-        xml.Value struct.tracker.name
+        xml.Value issue.status.name
       }
-      xml.WBS(struct.outlinenumber)
-      xml.OutlineNumber struct.outlinenumber
-      xml.OutlineLevel struct.outlinelevel
-    }
-  end
-
-  def self.write_version(xml, version)
-    xml.Task {
-      @uid += 1
-      @version_id_to_uid[version.id] = @uid
-      xml.UID @uid
-      xml.ID version.id
-      xml.Name version.name
-      xml.Notes version.description
-      xml.CreateDate version.created_on.to_s(:project_xml)
-      if version.effective_date
-        xml.Start version.effective_date.to_time.to_s(:project_xml)
-        xml.Finish version.effective_date.to_time.to_s(:project_xml)
-      end
-      xml.Milestone 1
-      xml.FixedCostAccrual 3
-      xml.ConstraintType 4
-      xml.ConstraintDate version.try(:effective_date).try(:to_time).try(:to_s, :project_xml)
-      xml.Summary 1
-      xml.Critical 1
-      xml.Rollup 1
-      xml.Type 1
-      xml.ExtendedAttribute {
-        xml.FieldID 188744001
-        xml.Value version.id
-      }
-      xml.WBS @uid
-      xml.OutlineNumber @uid
-      xml.OutlineLevel 1
+      xml.WBS(extend_issue.OutlineNumber)
+      xml.OutlineNumber extend_issue.OutlineNumber
+      xml.OutlineLevel extend_issue.OutlineLevel
     }
   end
 end

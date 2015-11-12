@@ -325,8 +325,8 @@ private
   def self.initValues(project)
     @project = project
 
-    @settings ||= Setting.plugin_redmine_project_xml_sync
-    @ignore_fields = @settings[:export][:ignore_fields].select { |attr, val| val == '1' }.keys
+    @settings = Setting.plugin_redmine_project_xml_sync
+    @settings_import = @settings[:import]
 
     @message = {:notice => nil, :warning => nil, :error => nil}
     

@@ -14,31 +14,31 @@ Redmine::Plugin.register :redmine_project_xml_sync do
   requires_redmine version_or_higher: '3.0.0'
 
   settings default: {
-    export: {
-	    sync_versions: false,
-      ignore_fields: {
-        description: false,
-        priority: false,
-        done_ratio: false,
-        estimated_hours: false,
-        spent_hours: false
-      }
-    },
+    tracker_alias: 'R_TRACKER',
+    redmine_id_alias: 'R_ID',
+    redmine_status_alias: 'R_STATUS',
+    redmine_version_alias: 'R_VERSION',
+    redmine_category_alias: 'R_CATEGORY',
     import: {
-	    is_private_by_default: false,
-	    instant_import_tasks: 10,
-	    sync_versions: false,
-	    tracker_alias: 'TRACKER',
-      redmine_id_alias: 'RID',
-      redmine_status_alias: 'RSTATUS',
+      tracker_id: 2,
+      issue_status_id: 1,
       ignore_fields: {
-        description: false,
-        priority: false,
-        done_ratio: false,
         estimated_hours: false,
-        spent_hours: false
+        priority: false,
+        description: false,
+        done_ratio: false,
+        version: false,
+        category: false
       }
     },
+    export: {
+      ignore_fields: {
+        estimated_hours: false,
+        priority: false,
+        description: false,
+        done_ratio: false
+      }
+    }
   }, partial: 'settings/project_xml_sync_settings'
 
   project_module :project_xml_sync do

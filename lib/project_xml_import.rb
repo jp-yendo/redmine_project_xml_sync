@@ -22,9 +22,9 @@ private
     @project = project
     @upload_path = upload_path
 
-    @settings ||= Setting.plugin_redmine_project_xml_sync
-    @is_private_by_default = @settings[:import][:is_private_by_default] == '1'
-    @ignore_fields = @settings[:import][:ignore_fields].select { |attr, val| val == '1' }.keys
+    @settings = Setting.plugin_redmine_project_xml_sync
+    @settings_import = @settings[:import]
+    @ignore_fields = @settings_import[:ignore_fields].select { |attr, val| val == '1' }.keys
 
     @resources = []
     @required_custom_fields = []
@@ -120,8 +120,8 @@ private
           :author   => User.current,
           :project  => @project
           )
-        issue.status_id = @settings[:import][:issue_status_id]
-        issue.tracker_id = @settings[:import][:tracker_id]
+        issue.status_id = @settings_import[:issue_status_id]
+        issue.tracker_id = @settings_import[:tracker_id]
 
         if task.task_id > 0
           issue.subject = task.name
