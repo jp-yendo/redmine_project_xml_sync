@@ -179,13 +179,6 @@ private
   end
 
   def self.write_task(xml, extend_issue, id)
-#redmine          project xml
-#'description'    'notes'
-#'start_date'     'start'
-#'due_date'       'finish'
-#'estimated_hours''duration'
-#'subject'        'title'
-#'done_ratio'     'percentcomplete'
     issue = extend_issue.issue
     xml.Task {
       xml.UID @uid
