@@ -114,13 +114,9 @@ class ProjectXmlExport
               else
                 xml.ResourceUID 0
               end
-              unless ignore_field?(:estimated_hours)
-                time = get_scorm_time(issue.estimated_hours)
-                xml.Work time
-                xml.RegularWork time
-                xml.RemainingWork time
-              end
               xml.PercentWorkComplete issue.done_ratio unless ignore_field?(:done_ratio)
+              xml.Work get_scorm_time(issue.estimated_hours) unless ignore_field?(:estimated_hours)
+              xml.ActualWork get_scorm_time(issue.total_spent_hours)
               xml.Units 1
               unless issue.total_spent_hours.zero?
                 xml.TimephasedData {
@@ -204,7 +200,7 @@ private
                       start_date
                     end
       xml.Finish finish_date.to_time.to_s(:project_xml)
-      xml.PercentComplete issue.done_ratio
+      xml.PercentComplete issue.done_ratio unless ignore_field?(:done_ratio)
       estimated_time = get_scorm_time(issue.estimated_hours)
       xml.Duration estimated_time
       xml.DurationFormat 7
