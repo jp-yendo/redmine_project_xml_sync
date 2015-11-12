@@ -116,14 +116,25 @@ class ProjectXmlExport
               end
               xml.PercentWorkComplete issue.done_ratio unless ignore_field?(:done_ratio)
               xml.Work get_scorm_time(issue.estimated_hours) unless ignore_field?(:estimated_hours)
-              xml.ActualWork get_scorm_time(issue.total_spent_hours)
               xml.Units 1
               unless issue.total_spent_hours.zero?
+                xml.ActualWork get_scorm_time(issue.total_spent_hours)
+
+                start_date =  if !issue.start_date.nil?
+                                issue.start_date
+                              else
+                                issue.created_on.to_date
+                              end
+                finish_date = if !issue.due_date.nil?
+                                issue.due_date
+                              else
+                                start_date
+                              end
                 xml.TimephasedData {
                   xml.Type 2
-                  xml.Start (issue.start_date || issue.created_on).to_time.to_s(:project_xml)
-                  xml.Finish ((issue.start_date || issue.created_on).to_time + (issue.total_spent_hours.to_i).hours).to_s(:project_xml)
-                  xml.Unit 2
+                  xml.Start start_date.to_time.to_s(:project_xml)
+                  xml.Finish finish_date.to_time.to_s(:project_xml)
+                  xml.Unit 3
                   xml.Value get_scorm_time(issue.total_spent_hours)
                 }
               end
@@ -176,6 +187,19 @@ private
 
   def self.write_task(xml, extend_issue, id)
     issue = extend_issue.issue
+    start_date =  if !issue.start_date.nil?
+                    issue.start_date
+                  else
+                    issue.created_on.to_date
+                  end
+    finish_date = if !issue.due_date.nil?
+                    issue.due_date
+                  else
+                    start_date
+                  end
+    estimated_time = get_scorm_time(issue.estimated_hours)
+    parent = issue.leaf? ? 0 : 1
+
     xml.Task {
       xml.UID @uid
       xml.ID id
@@ -188,29 +212,17 @@ private
       xml.OutlineLevel extend_issue.OutlineLevel
       xml.HyperlinkAddress '' #issue_url(issue)
       xml.Priority(ignore_field?(:priority) ? 500 : get_priority_value(issue.priority.name))
-      start_date =  if !issue.start_date.nil?
-                      issue.start_date
-                    else
-                      issue.created_on.to_date
-                    end
       xml.Start start_date.to_time.to_s(:project_xml)
-      finish_date = if !issue.due_date.nil?
-                      issue.due_date
-                    else
-                      start_date
-                    end
       xml.Finish finish_date.to_time.to_s(:project_xml)
       xml.PercentComplete issue.done_ratio unless ignore_field?(:done_ratio)
-      estimated_time = get_scorm_time(issue.estimated_hours)
       xml.Duration estimated_time
       xml.DurationFormat 7
-      xml.ActualDuration get_scorm_time(issue.total_spent_hours)
+      xml.ActualDuration get_scorm_time(issue.total_spent_hours) unless issue.total_spent_hours.zero?
       xml.Milestone 0
       xml.FixedCostAccrual 3
       xml.ConstraintType 2
       xml.ConstraintDate start_date.to_time.to_s(:project_xml)
       xml.IgnoreResourceCalendar 0
-      parent = issue.leaf? ? 0 : 1
       xml.Summary(parent)
       xml.Rollup(parent)
       xml.Active 1
