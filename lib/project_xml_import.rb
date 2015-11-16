@@ -51,20 +51,20 @@ private
       if tmp_title.nil?
         @title = "ProjectXmlSync_#{User.current}:#{Date.today}"
         @message[:warning] = "No Titel in XML found. I use #{@title} instead!"
-        #@title = ele.elements["Name"].text if ele.elements["Name"]
       else
         @title = prefix + tmp_title
       end
 
       ele.each_element('//Resource') do |child|
-        @resources.push(xml_resources child)
-#        render :text => "Resource name is: " + child.elements["Name"].text
+        if child.elements["UID"] && child.elements["UID"].text.to_i > 0
+          @resources.push(xml_resources child)
+        end
       end
 
       resource_uids = []
       ele.each_element('//Assignment') do |child|
         assign = ProjectAssignment.new(child)
-        if assign.resource_uid >= 0
+        if assign.resource_uid > 0
           resource_uids.push(assign.resource_uid)
           @assignments.push(assign)
         end
@@ -83,7 +83,7 @@ private
             @usermapping.push([resource_uid,resource.name, user, resource.status])
           end
         end
-        #Rails.logger.debug("Mapping Resource: #{resource} UserMapping: #{@usermapping}")
+
         no_mapping_found = @usermapping.select { |id, name, user_obj, status| status.to_i > 2}.count
         unless no_mapping_found == 0
           @message[:error] = "Error: #{no_mapping_found} Users missing or not in project! Please resolve manually."

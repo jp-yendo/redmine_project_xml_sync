@@ -53,23 +53,27 @@ module ProjectXmlSyncHelper
       create_date = tasks.elements['CreateDate']
       date_time = create_date.text.split('T')
       task.create_date = date_time[0] + ' ' + date_time[1] if start_date
-      #task.create = name ? !(has_task(name.text)) : true
       duration_arr = tasks.elements["Duration"].text.split("H")
       task.duration = duration_arr[0][2..duration_arr[0].size-1]         
       task.done_ratio = tasks.elements["PercentComplete"].text if tasks.elements["PercentComplete"]
       task.outline_level = tasks.elements["OutlineLevel"].text.to_i  
       priority = tasks.elements["Priority"].text
-      if priority == "500"
-              task.priority_id = 2  #normal
-      elsif priority < "500"
-              task.priority_id = 1  #niedrig
-      elsif priority < "750"
-              task.priority_id = 3  #hoch
-      elsif priority < "1000"
-              task.priority_id = 4  #dringend
+      if priority.nil? || priority == ""
+        task.priority_id = 2  #normal
       else
-              task.priority_id = 5  #sofort
-      end   
+        case priority.to_i
+        when 0..300
+          task.priority_id = 1  #Low
+        when 301..699
+          task.priority_id = 2  #Normal
+        when 700..799
+          task.priority_id = 3  #High
+        when 800..899
+          task.priority_id = 4  #Urgent
+        else
+          task.priority_id = 5  #Immediate
+        end
+      end
       task.notes=tasks.elements["Notes"].text if tasks.elements["Notes"]
     return task
   end rescue raise 'parse error'
