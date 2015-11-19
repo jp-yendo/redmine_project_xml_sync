@@ -107,7 +107,7 @@ class ProjectCsvExport
           value = ""
         end
         csvline += "\""
-        csvline += value.to_s
+        csvline += value.to_s.gsub(/"/,"'")
         csvline += "\""
       end
 
