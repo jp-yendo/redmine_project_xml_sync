@@ -7,39 +7,28 @@ class ProjectCsvImport
                  :start_date, :due_date, :done_ratio, :estimated_hours,
                  :parent_issue, :watchers ]
 
-  def self.match(targetproject, params)
+  def self.match(targetproject, import_params)
     initValues(targetproject)
 
-    # Delete existing iip to ensure there can't be two iips for a user
-    CsvImportInProgress.delete_all(["user_id = ?",User.current.id])
-    # save import-in-progress data
-    iip = CsvImportInProgress.new
-    iip.user_id = User.current.id
-    iip.col_sep = params[:csv_import_splitter]
-    if iip.col_sep.nil? || iip.col_sep.blank?
-      iip.col_sep = ","
+    begin
+      case import_params[:csv_import_encoding]
+      when "S"
+        @csv_data = File.read(import_params[:csv_file_path], :encoding => Encoding::SJIS).encode(Encoding::UTF_8)
+      else
+        @csv_data = File.read(import_params[:csv_file_path], :encoding => Encoding::UTF_8)
+      end
+    rescue Exception => ex
+      @message[:error] = ex.message
+      return
     end
-    iip.quote_char = params[:csv_import_wrapper]
-    if iip.quote_char.nil? || iip.quote_char.blank?
-      iip.quote_char = "\""
-    end
-    iip.encoding = params[:csv_import_encoding]
-    iip.created = Time.new
-    iip.csv_data = params[:csv_import_file].read unless params[:csv_import_file].blank?
-    iip.save
-
-    # Put the timestamp in the params to detect
-    # users with two imports in progress
-    @import_timestamp = iip.created.strftime("%Y-%m-%d %H:%M:%S")
-    @original_filename = params[:csv_import_file].original_filename
-
-    validate_csv_data(iip.csv_data)
+    
+    validate_csv_data()
     return if @message[:error].present?
 
-    sample_data(iip)
+    sample_data(import_params)
     return if @message[:error].present?
 
-    set_csv_headers(iip)
+    set_csv_headers(import_params)
     return if @message[:error].present?
 
     i18 = Object.new
@@ -58,28 +47,27 @@ class ProjectCsvImport
     end
     @attrs.sort!
     
-    return @import_timestamp, @original_filename, @headers, @attrs, @samples
+    return @headers, @attrs, @samples
   end
 
-  def self.result(targetproject, params)
+  def self.result(targetproject, import_params, params)
     initValues(targetproject)
 
     # Used to optimize some work that has to happen inside the loop
     unique_attr_checked = false
 
-    # Retrieve saved import data
-    iip = CsvImportInProgress.find_by_user_id(User.current.id)
-    if iip == nil
-      @message[:error] = "No import is currently in progress"
-      return @messages, @handle_count, @affect_projects_issues, @failed_count, @headers, @failed_issues
+    begin
+      case import_params[:csv_import_encoding]
+      when "S"
+        @csv_data = File.read(import_params[:csv_file_path], :encoding => Encoding::SJIS).encode(Encoding::UTF_8)
+      else
+        @csv_data = File.read(import_params[:csv_file_path], :encoding => Encoding::UTF_8)
+      end
+    rescue Exception => ex
+      @message[:error] = ex.message
+      return
     end
-    if iip.created.strftime("%Y-%m-%d %H:%M:%S") != params[:import_timestamp]
-      @message[:error] = "You seem to have started another import " \
-        "since starting this one. " \
-        "This import cannot be completed"
-      return @messages, @handle_count, @affect_projects_issues, @failed_count, @headers, @failed_issues
-    end
-
+    
     # which options were turned on?
     update_issue = params[:update_issue]
     update_other_project = params[:update_other_project]
@@ -137,10 +125,10 @@ class ProjectCsvImport
     end
 
     csv_opt = {:headers=>true,
-               :encoding=>iip.encoding,
-               :quote_char=>iip.quote_char,
-               :col_sep=>iip.col_sep}
-    CSV.new(iip.csv_data, csv_opt).each do |row|
+               :encoding=>import_params[:csv_import_encoding],
+               :quote_char=>import_params[:csv_import_wrapper],
+               :col_sep=>import_params[:csv_import_splitter]}
+    CSV.new(@csv_data, csv_opt).each do |row|
 
       project = Project.find_by_name(fetch("project", row))
       project ||= @project
@@ -313,12 +301,6 @@ class ProjectCsvImport
       @failed_issues = @failed_issues.sort
       @headers = @failed_issues[0][1].headers
     end
-
-    # Clean up after ourselves
-    iip.delete
-
-    # Garbage prevention: clean up iips older than 3 days
-    CsvImportInProgress.delete_all(["created < ?",Time.new - 3*24*60*60])
 
     return @messages, @handle_count, @affect_projects_issues, @failed_count, @headers, @failed_issues
   end
@@ -544,30 +526,31 @@ private
     @messages << msg
   end
 
-  def self.validate_csv_data(csv_data)
-    if csv_data.lines.to_a.size <= 1
+  def self.validate_csv_data()
+    if @csv_data.lines.to_a.size <= 1
       @message[:error] = 'No data line in your CSV, check the encoding of the file'\
-        '<br/><br/>Header :<br/>'.html_safe + csv_data
+        '<br/><br/>Header :<br/>'.html_safe + @csv_data
       return
     end
   end
 
-  def self.sample_data(iip)
+  def self.sample_data(import_params)
     # display sample
     sample_count = 5
     @samples = []
 
+    csv_opt = {:headers=>true,
+               :encoding=>import_params[:csv_import_encoding],
+               :quote_char=>import_params[:csv_import_wrapper],
+               :col_sep=>import_params[:csv_import_splitter]}
     begin
-      CSV.new(iip.csv_data, {:headers=>true,
-                             :encoding=>iip.encoding,
-                             :quote_char=>iip.quote_char,
-                             :col_sep=>iip.col_sep}).each_with_index do |row, i|
+      CSV.new(@csv_data, csv_opt).each_with_index do |row, i|
                                @samples[i] = row
                                break if i >= sample_count
                              end # do
 
     rescue Exception => e
-      csv_data_lines = iip.csv_data.lines.to_a
+      csv_data_lines = @csv_data.lines.to_a
 
       error_message = e.message +
         '<br/><br/>Header :<br/>'.html_safe +
@@ -585,7 +568,7 @@ private
     end
   end
 
-  def self.set_csv_headers(iip)
+  def self.set_csv_headers(import_params)
     if @samples.size > 0
       @headers = @samples[0].headers
     end
@@ -600,7 +583,7 @@ private
     if missing_header_columns.present?
       @message[:error] = "Column header missing : #{missing_header_columns}" \
       " / #{@headers.size} #{'<br/><br/>Header :<br/>'.html_safe}" \
-      " #{iip.csv_data.lines.to_a[0]}"
+      " #@csv_data.lines.to_a[0]}"
       return
     end
 
@@ -641,6 +624,23 @@ private
   # Returns the id for the given user or raises RecordNotFound
   # Implements a cache of users based on login name
   def self.user_for_login!(login, use_anonymous)
+    if login.nil?
+      return nil
+    end
+    
+    name_arr = login.split(/[\,]?\s+/) # Split on comma or whitespace
+    if name_arr.length > 1
+      users_found = User.where("firstname LIKE ? AND lastname LIKE ?", "%#{name_arr[0]}%", "%#{name_arr[1]}%")
+      users_found += User.where("firstname LIKE ? AND lastname LIKE ?", "%#{name_arr[1]}%", "%#{name_arr[0]}%")
+      unless users_found.nil? || users_found.empty?
+        if users_found.count == 1
+          user = users_found.first
+          @user_by_login[user.login] = user
+          @user_by_login[login] = user
+        end
+      end
+    end
+
     begin
       if !@user_by_login.has_key?(login)
         @user_by_login[login] = User.find_by_login!(login)

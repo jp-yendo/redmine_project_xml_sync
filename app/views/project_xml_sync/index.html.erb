@@ -24,9 +24,7 @@
       <p><label><%=l(:label_file_encoding)%>:</label>
         <%= select_tag "csv_import_encoding",
             "<option value=\"U\">UTF8</option>" \
-            "<option value=\"EUC\">EUC</option>" \
-            "<option value=\"S\" selected>SJIS</option>" \
-            "<option value=\"N\">None</option>".html_safe %></p>
+            "<option value=\"S\" selected>SJIS</option>".html_safe %></p>
 
       <p><label><%=l(:label_csv_import_splitter)%>:</label>
         <%= text_field_tag "csv_import_splitter", ',', {:size => 3, :maxlength => 1}%></p>

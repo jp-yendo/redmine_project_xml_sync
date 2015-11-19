@@ -54,15 +54,32 @@ class ProjectXmlSyncController < ApplicationController
   end
 
   def csv_import_match
-    @import_timestamp, @original_filename, @headers, @attrs, @samples = ProjectCsvImport.match(@project, params)
+    @import_csv_params = Hash.new
+    @import_csv_params[:csv_import_splitter] = params[:csv_import_splitter]
+    if @import_csv_params[:csv_import_splitter].nil? || @import_csv_params[:csv_import_splitter].blank?
+      @import_csv_params[:csv_import_splitter] = ","
+    end
+    @import_csv_params[:csv_import_wrapper] = params[:csv_import_wrapper]
+    if @import_csv_params[:csv_import_wrapper].nil? || @import_csv_params[:csv_import_wrapper].blank?
+      @import_csv_params[:csv_import_wrapper] = "\""
+    end
+    @import_csv_params[:csv_import_encoding] = params[:csv_import_encoding]
+    @import_csv_params[:created] = Time.new
+    @import_csv_params[:csv_file_path] = params[:csv_import_file].path unless params[:csv_import_file].blank?
+    @import_csv_params[:csv_original_filename] = params[:csv_import_file].original_filename unless params[:csv_import_file].blank?
+
+    @import_timestamp = @import_csv_params[:created].strftime("%Y-%m-%d %H:%M:%S")
+
+    @headers, @attrs, @samples = ProjectCsvImport.match(@project, @import_csv_params)
     show_message(ProjectCsvImport.message)
     if ProjectCsvImport.message[:error].present?
-      redirect_to :action => 'csv_import_results', :id => @project
+      redirect_to :action => 'index', :id => @project
     end
   end
 
   def csv_import_results
-    @messages, @handle_count, @affect_projects_issues, @failed_count, @headers, @failed_issues = ProjectCsvImport.result(@project, params)
+    @import_csv_params = params[:import_params]
+    @messages, @handle_count, @affect_projects_issues, @failed_count, @headers, @failed_issues = ProjectCsvImport.result(@project, @import_csv_params, params)
     show_message(ProjectCsvImport.message)
   end
   
