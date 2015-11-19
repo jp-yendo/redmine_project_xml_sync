@@ -15,8 +15,14 @@ class ProjectCsvImport
     # save import-in-progress data
     iip = CsvImportInProgress.new
     iip.user_id = User.current.id
-    iip.quote_char = params[:csv_import_wrapper]
     iip.col_sep = params[:csv_import_splitter]
+    if iip.col_sep.nil? || iip.col_sep.blank?
+      iip.col_sep = ","
+    end
+    iip.quote_char = params[:csv_import_wrapper]
+    if iip.quote_char.nil? || iip.quote_char.blank?
+      iip.quote_char = "\""
+    end
     iip.encoding = params[:csv_import_encoding]
     iip.created = Time.new
     iip.csv_data = params[:csv_import_file].read unless params[:csv_import_file].blank?
@@ -542,9 +548,6 @@ private
     if csv_data.lines.to_a.size <= 1
       @message[:error] = 'No data line in your CSV, check the encoding of the file'\
         '<br/><br/>Header :<br/>'.html_safe + csv_data
-
-      redirect_to :action => 'csv_import_results', :id => @project
-
       return
     end
   end
@@ -578,8 +581,6 @@ private
 
       @message[:error] = error_message
 
-      redirect_to :action => 'csv_import_results', :id => @project
-
       return
     end
   end
@@ -600,9 +601,6 @@ private
       @message[:error] = "Column header missing : #{missing_header_columns}" \
       " / #{@headers.size} #{'<br/><br/>Header :<br/>'.html_safe}" \
       " #{iip.csv_data.lines.to_a[0]}"
-
-      redirect_to :action => 'csv_import_results', :id => @project
-
       return
     end
 

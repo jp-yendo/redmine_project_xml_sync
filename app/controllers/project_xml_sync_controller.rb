@@ -56,6 +56,9 @@ class ProjectXmlSyncController < ApplicationController
   def csv_import_match
     @import_timestamp, @original_filename, @headers, @attrs, @samples = ProjectCsvImport.match(@project, params)
     show_message(ProjectCsvImport.message)
+    if ProjectCsvImport.message[:error].present?
+      redirect_to :action => 'csv_import_results', :id => @project
+    end
   end
 
   def csv_import_results
