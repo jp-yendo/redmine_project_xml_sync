@@ -19,7 +19,7 @@ en:
   label_file_format: "File format settings"
   label_file_encoding: "Encoding"
 
-  label_csv_import_notice: "Select a CSV file to import. Import file must have a header row. Maximum size 4MB."
+  label_csv_import_notice: "Select a CSV file to import. Import file must have a header row."
   label_csv_import_splitter: "Field separator character"
   label_csv_import_wrapper: "Field quoting character"
   
