@@ -412,7 +412,11 @@ private
 
     # optional attributes
     issue.description = fetch("description", row) || issue.description
-    issue.category_id = category != nil ? category.id : issue.category_id
+    unless category.nil?
+      issue.category_id = category.id
+    else
+      issue.category_id = nil
+    end
 
     if fetch("start_date", row).present?
       issue.start_date = Date.parse(fetch("start_date", row))
@@ -422,8 +426,16 @@ private
                      else
                        Date.parse(row[@attrs_map["due_date"]])
                      end
-    issue.assigned_to_id = assigned_to.id if assigned_to
-    issue.fixed_version_id = fixed_version_id if fixed_version_id
+    unless assigned_to.nil? || assigned_to.blank?
+      issue.assigned_to_id = assigned_to.id
+    else
+      issue.assigned_to_id = nil
+    end
+    unless fixed_version_id.nil? || fixed_version_id.blank?
+      issue.fixed_version_id = fixed_version_id
+    else
+      issue.fixed_version_id = nil
+    end
     issue.done_ratio = row[@attrs_map["done_ratio"]] || issue.done_ratio
     issue.estimated_hours = row[@attrs_map["estimated_hours"]] || issue.estimated_hours
   end

@@ -41,6 +41,10 @@ private
     @root_ids = []
   end
 
+  def self.ignore_field?(field)
+    field.to_s.in?(@ignore_fields)
+  end
+  
   def self.analyze_xml
     content = File.read(@upload_path)
 
@@ -143,10 +147,14 @@ private
         unless task.redmine_version.nil? || task.redmine_version.blank?
           issue.fixed_version = Version.find_by_project_id_and_name(@project.id, task.redmine_version)
           if issue.fixed_version.nil? then raise ActiveRecord::RecordNotFound, "No version named #{task.redmine_version}" end
+        else
+          issue.fixed_version = nil
         end
         unless task.redmine_category.nil? || task.redmine_category.blank?
           issue.category = IssueCategory.find_by_project_id_and_name(@project.id, task.redmine_category)
           if issue.category.nil? then raise ActiveRecord::RecordNotFound, "No category named #{task.redmine_category}" end
+        else
+          issue.category = nil
         end
 
         if task.task_id > 0
@@ -157,6 +165,8 @@ private
             mapped_user = @usermapping.select { |id, name, user_obj, status| id == assign.resource_uid and status < 3}.first
             Rails.logger.info("Mapped User: #{mapped_user}")
             issue.assigned_to_id = mapped_user[2].id unless mapped_user.nil?
+          else
+            issue.assigned_to = nil
           end
         else
           issue.subject = @title
