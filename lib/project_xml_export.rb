@@ -148,6 +148,10 @@ class ProjectXmlExport
     return export.to_xml, filename
   end
 
+  def self.message
+    return @message
+  end
+
 private
   def self.initValues(project)
     @project = project
@@ -155,6 +159,8 @@ private
     @settings = Setting.plugin_redmine_project_xml_sync
     @settings_export = @settings[:export]
     @ignore_fields = @settings_export[:ignore_fields].select { |attr, val| val == '1' }.keys
+
+    @message = {:notice => nil, :warning => nil, :error => nil}
 
     @uid = 1
     @resource_id_to_uid = {}

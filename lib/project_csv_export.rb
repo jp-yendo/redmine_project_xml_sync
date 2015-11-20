@@ -1,6 +1,7 @@
 include ProjectXmlSyncHelper
 
 class ProjectCsvExport
+  attr_accessor :message
   
   def self.generate_simple_csv(project)
     initValues(project)

@@ -35,46 +35,62 @@ module ProjectXmlSyncHelper
   end
 
   def xml_tasks tasks
-      task = ProjectTask.new
-      task.task_id = tasks.elements['ID'].text.to_i
-      task.wbs = tasks.elements['WBS'].text
+    task = ProjectTask.new
+    task.task_id = tasks.elements['ID'].text.to_i
+    task.wbs = tasks.elements['WBS'].text
 #      task.outline_number = tasks.elements['OutlineNumber'].text
-      task.outline_level = tasks.elements['OutlineLevel'].text.to_i
-      
-      name = tasks.elements['Name']
-      task.name = name.text if name
-      date = Date.new
-      start_date = tasks.elements['Start']
-      task.start_date = start_date.text.split('T')[0] if start_date
-      
-      finish_date = tasks.elements['Finish']
-      task.finish_date = finish_date.text.split('T')[0] if finish_date
-      
-      create_date = tasks.elements['CreateDate']
-      date_time = create_date.text.split('T')
-      task.create_date = date_time[0] + ' ' + date_time[1] if start_date
-      duration_arr = tasks.elements["Duration"].text.split("H")
-      task.duration = duration_arr[0][2..duration_arr[0].size-1]         
-      task.done_ratio = tasks.elements["PercentComplete"].text if tasks.elements["PercentComplete"]
-      task.outline_level = tasks.elements["OutlineLevel"].text.to_i  
-      priority = tasks.elements["Priority"].text
-      if priority.nil? || priority == ""
-        task.priority_id = 2  #normal
+    task.outline_level = tasks.elements['OutlineLevel'].text.to_i
+
+    name = tasks.elements['Name']
+    task.name = name.text if name
+    date = Date.new
+    start_date = tasks.elements['Start']
+    task.start_date = start_date.text.split('T')[0] if start_date
+
+    finish_date = tasks.elements['Finish']
+    task.finish_date = finish_date.text.split('T')[0] if finish_date
+
+    create_date = tasks.elements['CreateDate']
+    date_time = create_date.text.split('T')
+    task.create_date = date_time[0] + ' ' + date_time[1] if start_date
+    duration_arr = tasks.elements["Duration"].text.split("H")
+    task.duration = duration_arr[0][2..duration_arr[0].size-1]         
+    task.done_ratio = tasks.elements["PercentComplete"].text if tasks.elements["PercentComplete"]
+    task.outline_level = tasks.elements["OutlineLevel"].text.to_i  
+    priority = tasks.elements["Priority"].text
+    if priority.nil? || priority == ""
+      task.priority_id = 2  #normal
+    else
+      case priority.to_i
+      when 0..300
+        task.priority_id = 1  #Low
+      when 301..699
+        task.priority_id = 2  #Normal
+      when 700..799
+        task.priority_id = 3  #High
+      when 800..899
+        task.priority_id = 4  #Urgent
       else
-        case priority.to_i
-        when 0..300
-          task.priority_id = 1  #Low
-        when 301..699
-          task.priority_id = 2  #Normal
-        when 700..799
-          task.priority_id = 3  #High
-        when 800..899
-          task.priority_id = 4  #Urgent
-        else
-          task.priority_id = 5  #Immediate
-        end
+        task.priority_id = 5  #Immediate
       end
-      task.notes=tasks.elements["Notes"].text if tasks.elements["Notes"]
+    end
+    task.notes=tasks.elements["Notes"].text if tasks.elements["Notes"]
+
+    tasks.each_element("ExtendedAttribute") do |node|
+      case node.elements["FieldID"].text
+      when "188744000"
+        task.tracker = node.elements["Value"].text
+      when "188744001"
+        task.redmine_id = node.elements["Value"].text
+      when "188744002"
+        task.redmine_status = node.elements["Value"].text
+      when "188744003"
+        task.redmine_version = node.elements["Value"].text
+      when "188744004"
+        task.redmine_category = node.elements["Value"].text
+      end
+    end
+    
     return task
   end rescue raise 'parse error'
 

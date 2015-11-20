@@ -7,14 +7,18 @@ class ProjectXmlImport
   def self.analyze(project, upload_path)
     initValues(project, upload_path)
     analyze_xml
-    return @message, @title, @usermapping, @assignments, @tasks
+    return @title, @usermapping, @assignments, @tasks
   end
 
   def self.import(project, upload_path)
     initValues(project, upload_path)
     analyze_xml
     insert
-    return @message, @title, @usermapping, @assignments, @tasks, @root_ids
+    return @title, @usermapping, @assignments, @tasks, @root_ids
+  end
+
+  def self.message
+    return @message
   end
 
 private

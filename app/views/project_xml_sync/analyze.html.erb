@@ -25,7 +25,7 @@
       <th>Info</th>
     </tr>
     <% 
-    @assignments.each do |assign| 
+    @assignments.each do |assign|
       task = @tasks.select { |task| task.task_id == assign.task_uid}
       assigned_to = @usermapping.select {|id, user| id == assign.resource_uid}[0]
     %>
@@ -43,6 +43,12 @@
 <p>
 <h3><%= l(:task_tag)%></h3>
 <% @tasks.each do |task| %>
-  <%= task.name %> WBS:<%= task.wbs %><br>
+  <%= task.name %> WBS:<%= task.wbs %>
+  <% unless task.tracker.nil? %> tracker:<%= task.tracker %><% end %>
+  <% unless task.redmine_id.nil? %> redmine_id:<%= task.redmine_id %><% end %>
+  <% unless task.redmine_status.nil? %> redmine_status:<%= task.redmine_status %><% end %>
+  <% unless task.redmine_version.nil? %> redmine_version:<%= task.redmine_version %><% end %>
+  <% unless task.redmine_category.nil? %> redmine_category:<%= task.redmine_category %><% end %>
+  <br>
 <% end %>
 </p>

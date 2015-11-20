@@ -30,16 +30,19 @@ class ProjectXmlSyncController < ApplicationController
     if do_import == 'true'
       @upload_path = params[:upload_path]
       Rails.logger.info "start import from #{@upload_path}"
-      message, @title, @usermapping, @assignments, @tasks, root_ids = ProjectXmlImport.import(@project, @upload_path)
+      @title, @usermapping, @assignments, @tasks, root_ids = ProjectXmlImport.import(@project, @upload_path)
       redirect_to :action => 'import_results', :id => @project, :root_ids => root_ids
     else
       upload  = params[:uploaded_file]
       @upload_path = upload.path
       Rails.logger.info "upload xml file: #{upload.class.name}: #{upload.inspect} : #{upload.original_filename} : uploaded_path: #{@upload_path}"
-      message, @title, @usermapping, @assignments, @tasks = ProjectXmlImport.analyze(@project, @upload_path)
+      @title, @usermapping, @assignments, @tasks = ProjectXmlImport.analyze(@project, @upload_path)
     end
 
-    show_message(message)
+    show_message(ProjectXmlImport.message)
+    if ProjectXmlImport.message[:error].present?
+      redirect_to :action => 'index', :id => @project
+    end
   end
 
   def import_results
@@ -95,6 +98,9 @@ class ProjectXmlSyncController < ApplicationController
       
     end
     show_message(ProjectCsvExport.message)
+    if ProjectCsvExport.message[:error].present?
+      redirect_to :action => 'index', :id => @project
+    end
   end
   
 private

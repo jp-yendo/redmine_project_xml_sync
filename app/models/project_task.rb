@@ -14,4 +14,10 @@ class ProjectTask
   attr_accessor :done_ratio
   attr_accessor :priority_id
   attr_accessor :notes
+
+  attr_accessor :tracker
+  attr_accessor :redmine_id
+  attr_accessor :redmine_status
+  attr_accessor :redmine_version
+  attr_accessor :redmine_category
 end
