@@ -120,12 +120,34 @@ private
 
     @tasks.each do |task|
       begin
-        issue = Issue.new(
-          :author   => User.current,
-          :project  => @project
-          )
-        issue.status_id = @settings_import[:issue_status_id]
-        issue.tracker_id = @settings_import[:tracker_id]
+        unless task.redmine_id.nil? || task.redmine_id.blank?
+          issue = Issue.find_by_id(task.redmine_id)
+        else          
+          issue = Issue.new(
+            :author   => User.current,
+            :project  => @project
+            )
+        end
+        unless task.tracker.nil? || task.tracker.blank?
+          issue.tracker = Tracker.find_by_name(task.tracker)
+          if issue.tracker.nil? then raise ActiveRecord::RecordNotFound, "No tracker named #{task.tracker}" end
+        else          
+          issue.tracker_id = @settings_import[:tracker_id]
+        end
+        unless task.redmine_status.nil? || task.redmine_status.blank?
+          issue.status = IssueStatus.find_by_name(task.redmine_status)
+          if issue.status.nil? then raise ActiveRecord::RecordNotFound, "No status named #{task.redmine_status}" end
+        else          
+          issue.status_id = @settings_import[:issue_status_id]
+        end
+        unless task.redmine_version.nil? || task.redmine_version.blank?
+          issue.fixed_version = Version.find_by_project_id_and_name(@project.id, task.redmine_version)
+          if issue.fixed_version.nil? then raise ActiveRecord::RecordNotFound, "No version named #{task.redmine_version}" end
+        end
+        unless task.redmine_category.nil? || task.redmine_category.blank?
+          issue.category = IssueCategory.find_by_project_id_and_name(@project.id, task.redmine_category)
+          if issue.category.nil? then raise ActiveRecord::RecordNotFound, "No category named #{task.redmine_category}" end
+        end
 
         if task.task_id > 0
           issue.subject = task.name
