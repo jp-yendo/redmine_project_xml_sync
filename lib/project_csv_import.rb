@@ -85,6 +85,7 @@ class ProjectCsvImport
     unique_attr = fields_map[unique_field]
 
     default_tracker = params[:default_tracker]
+    default_status = @settings_import[:issue_status_id]
     journal_field = params[:journal_field]
 
     # attrs_map is fields_map's invert
@@ -130,7 +131,7 @@ class ProjectCsvImport
                :col_sep=>import_params[:csv_import_splitter]}
     CSV.new(@csv_data, csv_opt).each do |row|
 
-      project = Project.find_by_name(fetch("project", row))
+      project = if isAattrsMap("project") then Project.find_by_name(fetch("project", row)) end
       project ||= @project
 
       begin
@@ -147,17 +148,18 @@ class ProjectCsvImport
           issue.id = fetch("id", row)
         end
 
-        tracker = Tracker.find_by_name(fetch("tracker", row))
-        status = IssueStatus.find_by_name(fetch("status", row))
-        author = if @attrs_map["author"]
+        tracker = if isAattrsMap("tracker") then Tracker.find_by_name(fetch("tracker", row)) else nil end
+        status = if isAattrsMap("status") then IssueStatus.find_by_name(fetch("status", row)) else nil end
+        author = if isAattrsMap("author")
                    user_for_login!(fetch("author", row), params[:use_anonymous])
                  else
                    User.current
                  end
         priority = Enumeration.find_by_name(fetch("priority", row))
-        category_name = fetch("category", row)
-        category = IssueCategory.find_by_project_id_and_name(project.id,
-                                                             category_name)
+        category_name = if isAattrsMap("category") then fetch("category", row) else nil end
+        unless category_name.blank?
+          category = IssueCategory.find_by_project_id_and_name(project.id, category_name)
+        end
 
         if (!category) \
           && category_name && category_name.length > 0 \
@@ -167,20 +169,18 @@ class ProjectCsvImport
           category.save
         end
 
-        if fetch("assigned_to", row).present?
-          assigned_to = user_for_login!(fetch("assigned_to", row), params[:use_anonymous])
-        else
-          assigned_to = nil
+        if isAattrsMap("assigned_to")
+          assigned_to_name = fetch("assigned_to", row)
+          unless assigned_to_name.blank?
+            assigned_to = user_for_login!(assigned_to_name, params[:use_anonymous])
+          end
         end
 
-        if fetch("fixed_version", row).present?
+        if isAattrsMap("fixed_version")
           fixed_version_name = fetch("fixed_version", row)
-          fixed_version_id = version_id_for_name!(project,
-                                                  fixed_version_name,
-                                                  add_versions)
-        else
-          fixed_version_name = nil
-          fixed_version_id = nil
+          unless fixed_version_name.blank?
+            fixed_version_id = version_id_for_name!(project, fixed_version_name, add_versions)
+          end
         end
 
         watchers = fetch("watchers", row)
@@ -194,6 +194,11 @@ class ProjectCsvImport
           issue.tracker_id = tracker.id
         else
           issue.tracker_id = default_tracker
+        end
+        if !status.nil?
+          issue.status_id = status.id
+        else
+          issue.status_id = default_status
         end
         if !author.nil?
           issue.author_id = author.id
@@ -334,6 +339,17 @@ private
     @version_id_by_name = Hash.new
   end
 
+  def self.isAattrsMap(key)
+    return (@attrs_map[key].blank? == false)
+  end
+  
+  def self.parseDate(datestring)
+    if datestring.nil?
+      return nil
+    end
+    return Date.parse(datestring) rescue nil
+  end
+  
   def self.translate_unique_attr(issue, unique_field, unique_attr, unique_attr_checked)
     # translate unique_attr if it's a custom field -- only on the first issue
     if !unique_attr_checked
@@ -409,35 +425,21 @@ private
     issue.status_id = status != nil ? status.id : issue.status_id
     issue.priority_id = priority != nil ? priority.id : issue.priority_id
     issue.subject = fetch("subject", row) || issue.subject
+    issue.done_ratio = fetch("done_ratio", row) || issue.done_ratio
 
     # optional attributes
-    issue.description = fetch("description", row) || issue.description
-    unless category.nil?
-      issue.category_id = category.id
-    else
-      issue.category_id = nil
+    issue.description = if isAattrsMap("description") then fetch("description", row) else issue.description end
+    if isAattrsMap("category")
+      issue.category_id = category != nil ? category.id : nil
     end
 
-    if fetch("start_date", row).present?
-      issue.start_date = Date.parse(fetch("start_date", row))
+    issue.start_date = if isAattrsMap("start_date") then parseDate(fetch("start_date", row)) else issue.start_date end
+    issue.due_date = if isAattrsMap("due_date") then parseDate(fetch("due_date", row)) else issue.due_date end
+    if isAattrsMap("assigned_to")
+      issue.assigned_to_id = assigned_to != nil ? assigned_to.id : nil
     end
-    issue.due_date = if row[@attrs_map["due_date"]].blank?
-                       nil
-                     else
-                       Date.parse(row[@attrs_map["due_date"]])
-                     end
-    unless assigned_to.nil? || assigned_to.blank?
-      issue.assigned_to_id = assigned_to.id
-    else
-      issue.assigned_to_id = nil
-    end
-    unless fixed_version_id.nil? || fixed_version_id.blank?
-      issue.fixed_version_id = fixed_version_id
-    else
-      issue.fixed_version_id = nil
-    end
-    issue.done_ratio = row[@attrs_map["done_ratio"]] || issue.done_ratio
-    issue.estimated_hours = row[@attrs_map["estimated_hours"]] || issue.estimated_hours
+    issue.fixed_version_id = if isAattrsMap("fixed_version") then fixed_version_id else issue.fixed_version_id end
+    issue.estimated_hours = if isAattrsMap("estimated_hours") then fetch("estimated_hours", row) else issue.estimated_hours end
   end
 
   def self.handle_parent_issues(issue, row, ignore_non_exist, unique_attr)
