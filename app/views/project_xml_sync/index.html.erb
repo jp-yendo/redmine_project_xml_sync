@@ -58,6 +58,8 @@
       <p><label><%=l(:label_file_encoding)%>:</label>
         <%= select_tag "csv_export_encoding", options_for_select(@csv_encoding, Setting.plugin_redmine_project_xml_sync[:csv_encoding]) %></p>
     </fieldset>
+    <%= l(:label_target_subproject) %>
+    <%= check_box_tag "csv_export_subproject", true %><br />
     <%= submit_tag l(:button_export) %>
   <% end %>
   </p>

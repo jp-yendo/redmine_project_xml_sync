@@ -87,8 +87,13 @@ class ProjectXmlSyncController < ApplicationController
   end
   
   def csv_export
+    if params[:csv_export_subproject].blank?
+      export_subproject = false
+    else
+      export_subproject = true
+    end
     begin
-      csv, name = ProjectCsvExport.generate_simple_csv(@project)
+      csv, name = ProjectCsvExport.generate_simple_csv(@project, export_subproject)
       case params[:csv_export_encoding]
       when "S"
         csv = csv.encode(Encoding::SJIS)

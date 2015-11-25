@@ -19,6 +19,8 @@ ja:
   label_file_format: "ファイルフォーマットのオプション"
   label_file_encoding: "エンコーディング"
 
+  label_target_subproject: "サブプロジェクトも対象にする"
+
   label_csv_import_notice: "CSV ファイルを選択してください。ヘッダー行が必要です。"
   label_csv_import_splitter: "フィールドの区切り文字"
   label_csv_import_wrapper: "引用文字"

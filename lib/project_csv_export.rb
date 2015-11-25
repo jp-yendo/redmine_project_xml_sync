@@ -2,13 +2,53 @@ include ProjectXmlSyncHelper
 
 class ProjectCsvExport
   attr_accessor :message
-  
-  def self.generate_simple_csv(project)
-    initValues(project)
 
+  def self.generate_simple_csv(project, export_subproject)
+    initValues(project)
+    
+    if export_subproject == true
+      projectids = RedmineIssueTree.getProjectIds(@project.id, nil)
+
+      #csv buffer clear
+      csvdata = ""
+
+      first = true
+      projectids.each do |projectid|
+        project = Project.find_by_id(projectid)
+        csvdata = csvdata + generate_project_csv(project, export_subproject, first)
+        if first == true
+          first = false
+        end
+      end
+    else
+      csvdata = generate_project_csv(@project, export_subproject, true)
+    end
+
+    filename = "#{@project.identifier}-#{Time.now.strftime("%Y-%m-%d-%H-%M")}.csv"
+    return csvdata, filename
+  end
+
+  def self.message
+    return @message
+  end
+  
+private
+  def self.initValues(project)
+    @project = project
+
+    @settings = Setting.plugin_redmine_project_xml_sync
+    @settings_export = @settings[:export]
+
+    @message = {:notice => nil, :warning => nil, :error => nil}
+  end
+
+  def self.generate_project_csv(project, export_subproject, export_header)
     columnbymethod = {
         :id => "id",
         :tracker => "tracker",
+        :project_id => "project_id",
+        :project_identifier => "get.project_identifier",
+        :project_name => "get.project_name",
         :subject => "subject",
         :description => "description",
         :start_date => "start_date",
@@ -37,23 +77,27 @@ class ProjectCsvExport
         :outlinelevel => "extend.OutlineLevel",
         :outlinenumber => "extend.OutlineNumber"
       }
-    
-    flatissues = RedmineIssueTree.getFlatIssuesFromProject(@project)
 
     #csv buffer clear
     csvdata = ""
-
-    first = true
-    columnbymethod.keys.each do |key|
-      if first
-        first = false
-      else
-        csvdata += ","
+    
+    if export_header == true
+      first = true
+      columnbymethod.keys.each do |key|
+        if first
+          first = false
+        else
+          csvdata += ","
+        end
+        csvdata += key.to_s
       end
-      csvdata += key.to_s
+      csvdata += "\n"
     end
-    csvdata += "\n"
 
+    flatissues = RedmineIssueTree.getFlatIssuesFromProject(project)
+    project_identifier = project.identifier
+    project_name = project.name
+    
     flatissues.each do |exissue|
       csvline = ""
 
@@ -71,6 +115,17 @@ class ProjectCsvExport
           if callmethod.start_with?("extend.")
             callmethod = callmethod[7,callmethod.length-7]
             value = exissue.send(callmethod)
+            if export_subproject == true && callmethod == "OutlineNumber"
+              value = exissue.issue.project_id.to_s + "." + value
+            end
+          elsif callmethod.start_with?("get.")
+            getname = callmethod[4,callmethod.length-4]
+            case getname
+            when "project_identifier"
+              value = project_identifier
+            when "project_name"
+              value = project_name
+            end
           elsif callmethod.start_with?("calc.")
             calcname = callmethod[5,callmethod.length-5]
             case calcname
@@ -116,24 +171,9 @@ class ProjectCsvExport
       csvdata += csvline
     end
 
-    filename = "#{@project.identifier}-#{Time.now.strftime("%Y-%m-%d-%H-%M")}.csv"
-    return csvdata, filename
-  end
-
-  def self.message
-    return @message
+    return csvdata
   end
   
-private
-  def self.initValues(project)
-    @project = project
-
-    @settings = Setting.plugin_redmine_project_xml_sync
-    @settings_export = @settings[:export]
-
-    @message = {:notice => nil, :warning => nil, :error => nil}
-  end
-
   def self.getIssueProgress(issue)
     result  = IssueInfo::new
 
