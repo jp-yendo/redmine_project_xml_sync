@@ -377,14 +377,6 @@ private
           raise RowFailed
         end
 
-        # ignore closed issue except reopen
-        if issue.status.is_closed?
-          if status == nil || status.is_closed?
-            @skip_count += 1
-            raise RowFailed
-          end
-        end
-
         # init journal
         note = row[journal_field] || ''
         journal = issue.init_journal(author || User.current,
@@ -611,28 +603,30 @@ private
     end
 
     if unique_attr == "id"
-      issues = Issue.all.where(:id => attr_value)
+      issue = Issue.find_by_id(attr_value)
     else
       query = IssueQuery.new(:name => "_importer", :project_id => @project.id)
-      query.add_filter("status_id", "*", [1])
+      #query.add_filter("status_id", "*", [1])
       query.add_filter(unique_attr, "=", [attr_value])
 
       issues = Issue.all.where(query.statement).limit(2)
+      if issues.size > 1
+        @failed_count += 1
+        @failed_issues[@failed_count] = row_data
+        @messages << "Warning: Unique field #{unique_attr} with value " \
+          "'#{attr_value}' in issue #{@failed_count} has duplicate record"
+        raise MultipleIssuesForUniqueValue, "Unique field #{unique_attr} with" \
+          " value '#{attr_value}' has duplicate record"
+      elsif issues.size == 1
+        issue = issues.first
+      end
     end
 
-    if issues.size > 1
-      @failed_count += 1
-      @failed_issues[@failed_count] = row_data
-      @messages << "Warning: Unique field #{unique_attr} with value " \
-        "'#{attr_value}' in issue #{@failed_count} has duplicate record"
-      raise MultipleIssuesForUniqueValue, "Unique field #{unique_attr} with" \
-        " value '#{attr_value}' has duplicate record"
-    else
-      if issues.size == 0
-        raise NoIssueForUniqueValue, "No issue with #{unique_attr} of '#{attr_value}' found"
-      end
-      return issues.first
+    if issue.nil?
+      raise NoIssueForUniqueValue, "No issue with #{unique_attr} of '#{attr_value}' found"
     end
+    
+    return issue
   end
 
   # Returns the id for the given user or raises RecordNotFound

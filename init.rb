@@ -8,7 +8,7 @@ Redmine::Plugin.register :redmine_project_xml_sync do
   name 'Redmine Project Xml Sync plugin'
   author 'Yuichiro Endo'
   description 'Sync OpenSource ProjectManagement software for Redmine'
-  version '0.2.1'
+  version '0.2.2'
   url 'https://github.com/jp-yendo/redmine_project_xml_sync.git'
 
   requires_redmine version_or_higher: '3.0.0'
@@ -38,7 +38,8 @@ Redmine::Plugin.register :redmine_project_xml_sync do
         description: false,
         done_ratio: false
       }
-    }
+    },
+    csv_encoding: 'U'
   }, partial: 'settings/project_xml_sync_settings'
 
   project_module :project_xml_sync do

@@ -11,13 +11,11 @@ class ProjectXmlSyncController < ApplicationController
   unloadable
 
   before_filter :find_project, only: [:index, :analyze, :import_results, :export, :csv_import_match, :csv_import_results, :csv_export]
-#  before_filter :find_project, :get_plugin_settings, only: [:index, :analyze, :import_results, :export]
   before_filter :authorize, :except => :analyze
-#  before_filter :get_import_settings, :only => [:index, :analyze, :import_results]
-#  before_filter :get_export_settings, :only => [:index, :export]
 
   def index
 #    flash.clear
+    @csv_encoding = {:UTF8 => "U", :SJIS => "S"}
   end
 
   def analyze

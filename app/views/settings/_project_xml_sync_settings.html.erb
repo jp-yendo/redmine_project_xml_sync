@@ -50,3 +50,8 @@
     <%= loader_setting_checkbox(:export, :ignore_fields, :done_ratio) %>
   <% end %>
 <% end %>
+
+<%= content_tag :p do %>
+  CSV default encoding
+  <%= select_tag "settings[csv_encoding]", options_for_select({:UTF8 => "U", :SJIS => "S"}, @settings[:csv_encoding]) %>
+<% end %>

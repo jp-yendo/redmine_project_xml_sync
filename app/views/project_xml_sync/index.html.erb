@@ -22,9 +22,7 @@
   <%= form_tag({:action => 'csv_import_match', :id => @project}, {:multipart => true}) do %>
     <fieldset class="box"><legend><%= l(:label_file_format) %></legend>
       <p><label><%=l(:label_file_encoding)%>:</label>
-        <%= select_tag "csv_import_encoding",
-            "<option value=\"U\">UTF8</option>" \
-            "<option value=\"S\" selected>SJIS</option>".html_safe %></p>
+        <%= select_tag "csv_import_encoding", options_for_select(@csv_encoding, Setting.plugin_redmine_project_xml_sync[:csv_encoding]) %></p>
 
       <p><label><%=l(:label_csv_import_splitter)%>:</label>
         <%= text_field_tag "csv_import_splitter", ',', {:size => 3, :maxlength => 1}%></p>
@@ -58,9 +56,7 @@
   <%= form_tag({:action => 'csv_export', :id => @project}, :multipart => true) do %>
     <fieldset class="box"><legend><%= l(:label_file_format) %></legend>
       <p><label><%=l(:label_file_encoding)%>:</label>
-        <%= select_tag "csv_export_encoding",
-            "<option value=\"U\">UTF8</option>" \
-            "<option value=\"S\" selected>SJIS</option>".html_safe %></p>
+        <%= select_tag "csv_export_encoding", options_for_select(@csv_encoding, Setting.plugin_redmine_project_xml_sync[:csv_encoding]) %></p>
     </fieldset>
     <%= submit_tag l(:button_export) %>
   <% end %>
