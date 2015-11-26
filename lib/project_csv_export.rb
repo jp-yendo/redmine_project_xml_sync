@@ -75,7 +75,8 @@ private
         :isScheduled => "calc.isScheduled",
         :children_count => "extend.ChildrenCount",
         :outlinelevel => "extend.OutlineLevel",
-        :outlinenumber => "extend.OutlineNumber"
+        :outlinenumber => "extend.OutlineNumber",
+        :outlinesubject => "extend.OutlineSubject"
       }
 
     #csv buffer clear
@@ -115,8 +116,13 @@ private
           if callmethod.start_with?("extend.")
             callmethod = callmethod[7,callmethod.length-7]
             value = exissue.send(callmethod)
-            if export_subproject == true && callmethod == "OutlineNumber"
-              value = exissue.issue.project_id.to_s + "." + value
+            if export_subproject == true
+              case callmethod
+              when "OutlineNumber"
+                value = exissue.issue.project_id.to_s + "." + value
+              when "OutlineSubject"
+                value = project_name + ":" + value
+              end
             end
           elsif callmethod.start_with?("get.")
             getname = callmethod[4,callmethod.length-4]

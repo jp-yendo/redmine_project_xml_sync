@@ -33,25 +33,27 @@ private
       extend_issue.ChildrenCount = root_issue.children.count
       extend_issue.OutlineLevel = 1
       extend_issue.OutlineNumber = (index+1).to_s
+      extend_issue.OutlineSubject = root_issue.subject
       result << extend_issue
 
       if extend_issue.ChildrenCount > 0
-        getNestIssues(root_issue, extend_issue.OutlineLevel, extend_issue.OutlineNumber, result)
+        getNestIssues(extend_issue, result)
       end
     end
   end
   
-  def self.getNestIssues(issue, outlinelevel, outlinenumber, result)
-    issue.children.each_with_index do |issue, index|
+  def self.getNestIssues(parent_extend_issue, result)
+    parent_extend_issue.issue.children.each_with_index do |issue, index|
       extend_issue = ExtendIssue.new
       extend_issue.issue = issue
       extend_issue.ChildrenCount = issue.children.count
-      extend_issue.OutlineLevel = (outlinelevel+1)
-      extend_issue.OutlineNumber = outlinenumber + "." + (index+1).to_s
+      extend_issue.OutlineLevel = (parent_extend_issue.OutlineLevel + 1)
+      extend_issue.OutlineNumber = parent_extend_issue.OutlineNumber + "." + (index+1).to_s
+      extend_issue.OutlineSubject = parent_extend_issue.OutlineSubject + "/" + issue.subject
       result << extend_issue
 
       if extend_issue.ChildrenCount > 0
-        getNestIssues(issue, extend_issue.OutlineLevel, extend_issue.OutlineNumber, result)
+        getNestIssues(extend_issue, result)
       end
     end
   end
