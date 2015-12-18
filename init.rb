@@ -14,6 +14,7 @@ Redmine::Plugin.register :redmine_project_xml_sync do
   requires_redmine version_or_higher: '3.0.0'
 
   settings default: {
+    region: :jp,
     tracker_alias: 'R_TRACKER',
     redmine_id_alias: 'R_ID',
     redmine_status_alias: 'R_STATUS',

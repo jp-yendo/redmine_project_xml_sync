@@ -1,3 +1,3 @@
-#gem 'delayed_job_active_record'
-#gem 'daemons'
 gem 'nokogiri'
+gem 'holidays'
+gem 'holiday_jp'

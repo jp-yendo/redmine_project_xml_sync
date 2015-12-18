@@ -1,3 +1,7 @@
+require 'date'
+require 'holidays'
+require 'holiday_jp'
+
 class DayInfo
   attr_accessor :date
   attr_accessor :dayname
@@ -61,7 +65,15 @@ private
     result = datecalc.non_working_week_days.include?(convert_wday[targetdate.wday])
 
     #日本の祝日と論理和
-    result = result | targetdate.holiday?(Setting.plugin_redmine_manage_summary['region']) 
+    region = Setting.plugin_redmine_project_xml_sync['region']
+    if region.to_sym == :jp
+      result = result | HolidayJp.holiday?(targetdate)
+    else
+      holidays = Holidays.on(targetdate, region.to_sym)
+      if holidays.length > 0
+        result = true
+      end
+    end
 
     return result
   end
