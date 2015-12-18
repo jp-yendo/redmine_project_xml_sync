@@ -96,11 +96,11 @@ class ProjectXmlSyncController < ApplicationController
       csv, name = ProjectCsvExport.generate_simple_csv(@project, export_subproject)
       case params[:csv_export_encoding]
       when "S"
-        csv = csv.encode(Encoding::SJIS)
+        csv = StringEncorder.convert_utf8_to_sjis(csv)
       end
       send_data csv, :filename => name, :disposition => :attachment
     rescue Exception => ex
-      
+      flash[:error] = ex.to_s
     end
     show_message(ProjectCsvExport.message)
     if ProjectCsvExport.message[:error].present?
@@ -112,7 +112,7 @@ private
   def find_project
     @project = Project.find(params[:id])
   end
-  
+
   def show_message(message)
     if message.nil?
       return

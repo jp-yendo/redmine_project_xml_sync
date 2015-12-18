@@ -5,7 +5,7 @@ class ProjectCsvExport
 
   def self.generate_simple_csv(project, export_subproject)
     initValues(project)
-    
+
     if export_subproject == true
       projectids = RedmineIssueTree.getProjectIds(@project.id, nil)
 

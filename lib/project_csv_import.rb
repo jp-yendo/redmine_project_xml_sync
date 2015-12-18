@@ -13,7 +13,8 @@ class ProjectCsvImport
     begin
       case import_params[:csv_import_encoding]
       when "S"
-        @csv_data = File.read(import_params[:csv_file_path], :encoding => Encoding::SJIS).encode(Encoding::UTF_8)
+        @csv_data = File.read(import_params[:csv_file_path], :encoding => Encoding::SJIS)
+        @csv_data = StringEncorder.convert_sjis_to_utf8(@csv_data)
       else
         @csv_data = File.read(import_params[:csv_file_path], :encoding => Encoding::UTF_8)
       end
