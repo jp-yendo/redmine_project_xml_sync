@@ -160,7 +160,7 @@ private
     @settings_export = @settings[:export]
     @ignore_fields = @settings_export[:ignore_fields].select { |attr, val| val == '1' }.keys
 
-    @message = {:notice => nil, :warning => nil, :error => nil}
+    @message = {:notice => nil, :alert => nil, :warning => nil, :error => nil}
 
     @uid = 1
     @resource_id_to_uid = {}

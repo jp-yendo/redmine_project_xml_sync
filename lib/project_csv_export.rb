@@ -39,7 +39,7 @@ private
     @settings = Setting.plugin_redmine_project_xml_sync
     @settings_export = @settings[:export]
 
-    @message = {:notice => nil, :warning => nil, :error => nil}
+    @message = {:notice => nil, :alert => nil, :warning => nil, :error => nil}
   end
 
   def self.generate_project_csv(project, export_subproject, export_header)

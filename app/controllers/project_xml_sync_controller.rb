@@ -123,6 +123,9 @@ private
     if !message[:warning].nil?
       flash[:warning] = message[:warning]
     end
+    if !message[:alert].nil?
+      flash[:alert] = message[:alert]
+    end
     if !message[:notice].nil?
       flash[:notice] = message[:notice]
     end

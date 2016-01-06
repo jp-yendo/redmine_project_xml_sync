@@ -322,7 +322,7 @@ private
     @settings = Setting.plugin_redmine_project_xml_sync
     @settings_import = @settings[:import]
 
-    @message = {:notice => nil, :warning => nil, :error => nil}
+    @message = {:notice => nil, :alert => nil, :warning => nil, :error => nil}
     
     @handle_count = 0
     @update_count = 0
