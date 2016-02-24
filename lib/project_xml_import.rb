@@ -87,9 +87,7 @@ private
           user = resource.map_user(member_uids)
           Rails.logger.info("Name: #{resource.name} Res_ID #{resource_uid} USER: #{user}")
           Rails.logger.info("\n -----------INFO: #{resource.info} Status: #{resource.status}")
-          unless user.nil?
-            @usermapping.push([resource_uid,resource.name, user, resource.status])
-          end
+          @usermapping.push([resource_uid,resource.name, user, resource.status])
         end
 
         no_mapping_found = @usermapping.select { |id, name, user_obj, status| status.to_i > 2}.count
@@ -126,12 +124,20 @@ private
       begin
         unless task.redmine_id.nil? || task.redmine_id.blank?
           issue = Issue.find_by_id(task.redmine_id)
-        else          
+          if issue.nil?
+            issue = Issue.new(
+              :author   => User.current,
+              :project  => @project
+              )
+            issue.id = task.redmine_id
+          end
+        else
           issue = Issue.new(
             :author   => User.current,
             :project  => @project
             )
         end
+
         unless task.tracker.nil? || task.tracker.blank?
           issue.tracker = Tracker.find_by_name(task.tracker)
           if issue.tracker.nil? then raise ActiveRecord::RecordNotFound, "No tracker named #{task.tracker}" end

@@ -28,13 +28,15 @@
     @assignments.each do |assign|
       task = @tasks.select { |task| task.task_id == assign.task_uid}
       assigned_to = @usermapping.select {|id, user| id == assign.resource_uid}[0]
+      unless task.nil? || assigned_to.nil?
     %>
-      <tr>
-        <td><%= task[0].name %></td>
-        <td><%= assigned_to[1] %></td>
-        <td><%= assigned_to[2].name unless assigned_to[3]>2 %></td>
-        <td><%= I18n.t('user_imp_status_' + assigned_to[3].to_s)%></td>
-      </tr>	
+        <tr>
+          <td><%= task[0].name unless task[0].nil? %></td>
+          <td><%= assigned_to[1] %></td>
+          <td><%= assigned_to[2].name if assigned_to[3] <= 2 %></td>
+         <td><%= I18n.t('user_imp_status_' + assigned_to[3].to_s)%></td>
+        </tr>	
+      <% end %>
     <% end %>
   </table>
   </p>

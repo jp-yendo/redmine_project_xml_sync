@@ -18,23 +18,20 @@ class ProjectResource
     end
 
     unless users_found.nil? || users_found.empty?
-      # test if user is member of project      
+      # test if user is member of project
       user = users_found.select{ |u| members.include?(u.id)}.first
       
-      unless user.nil?        
+      unless user.nil?
         @status=1
       else
         @status=2
         user=users_found.first
       end
     else
-      @status=3      
+      @status=3
+      user=nil
     end
 
-    if user.nil?
-      return "not found"
-    else
-      return user  
-    end
+    return user
   end
 end
