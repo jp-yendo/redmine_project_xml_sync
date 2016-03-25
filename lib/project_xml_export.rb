@@ -12,7 +12,10 @@ class ProjectXmlExport
 
       xml.Project(:xmlns=>"http://schemas.microsoft.com/project") {
         xml.Title @project.name
+
+        #Text1 - Text30
         xml.ExtendedAttributes {
+          #Redmine Field Text14 - 18
           xml.ExtendedAttribute {
             xml.FieldID 188744000
             xml.FieldName 'Text14'
@@ -38,7 +41,19 @@ class ProjectXmlExport
             xml.FieldName 'Text18'
             xml.Alias @settings[:redmine_category_alias]
           }
+
+          #Custom Field Text21 - 30
+          index = 0
+          @project.all_issue_custom_fields.each do |custom_field|
+            xml.ExtendedAttribute {
+              xml.FieldID (188744007 + index).to_s
+              xml.FieldName 'Text' + (21 + index).to_s
+              xml.Alias 'R_' + custom_field.name
+            }
+            index += 1
+          end
         }
+        
         xml.Calendars {
           default_calendar_uid = @uid
           xml.Calendar {
@@ -237,6 +252,9 @@ private
       xml.ManualFinish finish_date.to_time.to_s(:project_xml)
       xml.ManualDuration estimated_time
 
+      #Text1 - Text30
+      
+      #Redmine Field Text14 - 18
       xml.ExtendedAttribute {
         xml.FieldID 188744000
         xml.Value issue.tracker.name
@@ -265,6 +283,23 @@ private
           xml.Value ""
         end
       }
+      #Reserve 188744005 - 188744006
+
+      #Custom Field Text21 - 30
+      index = 0
+      @project.all_issue_custom_fields.each do |custom_field|
+        #custom_field.name
+        value = issue.custom_field_values.detect {|c| c.custom_field.name == custom_field.name}
+        xml.ExtendedAttribute {
+          xml.FieldID (188744007 + index)
+          if !value.nil?
+            xml.Value value
+          else
+            xml.Value ""
+          end
+        }
+        index += 1
+      end
     }
   end
 end

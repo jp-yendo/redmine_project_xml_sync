@@ -120,6 +120,11 @@ private
     last_outline_level = 0
     parent_stack = Array.new #contains a LIFO-stack of parent task
 
+    custom_field_names = []
+    @project.all_issue_custom_fields.each do |custom_field|
+      custom_field_names.push(custom_field.name)
+    end
+    
     @tasks.each do |task|
       begin
         unless task.redmine_id.nil? || task.redmine_id.blank?
@@ -211,6 +216,18 @@ private
         # required custom fields:
         update_custom_fields(issue, @required_custom_fields)
 
+        # set custom field
+        if task.redmine_custom_field.length
+          task.redmine_custom_field.each_with_index do |value,index|
+            custom_field_name = custom_field_names[index]
+            if !custom_field_name.blank?
+Rails.logger.info("==> " + custom_field_name + value.to_s)
+              custom_field = issue.custom_field_values.detect {|c| c.custom_field.name == custom_field_name}
+              custom_field.value = value if custom_field
+            end
+          end
+        end
+        
         if issue.save
           last_task_id = issue.id
           if issue.parent_id.nil?

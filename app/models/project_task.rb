@@ -20,4 +20,6 @@ class ProjectTask
   attr_accessor :redmine_status
   attr_accessor :redmine_version
   attr_accessor :redmine_category
+
+  attr_accessor :redmine_custom_field
 end

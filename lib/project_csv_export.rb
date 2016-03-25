@@ -66,8 +66,8 @@ private
       }
 
     #custom field
-    project.all_issue_custom_fields.each do |cfield|
-      columnbymethod[cfield.name.to_sym] = cfield.name
+    project.all_issue_custom_fields.each do |custom_field|
+      columnbymethod[custom_field.name.to_sym] = "custom." + custom_field.name
     end
 
     #calc field
@@ -134,6 +134,9 @@ private
                 value = project_name + ":" + value
               end
             end
+          elsif callmethod.start_with?("custom.")
+            custom_field_name = callmethod[7,callmethod.length-7]
+            value = exissue.issue.custom_field_values.detect {|c| c.custom_field.name == custom_field_name}
           elsif callmethod.start_with?("get.")
             getname = callmethod[4,callmethod.length-4]
             case getname
