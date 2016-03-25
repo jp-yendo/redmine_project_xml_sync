@@ -221,7 +221,6 @@ private
           task.redmine_custom_field.each_with_index do |value,index|
             custom_field_name = custom_field_names[index]
             if !custom_field_name.blank?
-Rails.logger.info("==> " + custom_field_name + value.to_s)
               custom_field = issue.custom_field_values.detect {|c| c.custom_field.name == custom_field_name}
               custom_field.value = value if custom_field
             end
