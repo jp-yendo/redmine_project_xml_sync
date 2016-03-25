@@ -43,6 +43,7 @@ private
   end
 
   def self.generate_project_csv(project, export_subproject, export_header)
+    #define field
     columnbymethod = {
         :id => "id",
         :tracker => "tracker",
@@ -62,23 +63,32 @@ private
         :priority => "priority",
         :parent_issue => "parent_id",
         :is_private => "is_private",
-        :actual_time => "calc.ActualTime",
-        :actual_first_date => "calc.ActualFirstDate",
-        :actual_last_date => "calc.ActualLastDate",
-        :actual_progress => "calc.ActualProgress",
-        :days_early => "calc.DaysEarly",
-        :days_delay => "calc.DaysDelay",
-        :count_total_issue => "calc.CountTotalIssue",
-        :count_closed_issue => "calc.CountClosedIssue",
-        :days_max_early => "calc.DaysMaxEarly",
-        :days_max_delay => "calc.DaysMaxDelay",
-        :isScheduled => "calc.isScheduled",
-        :children_count => "extend.ChildrenCount",
-        :outlinelevel => "extend.OutlineLevel",
-        :outlinenumber => "extend.OutlineNumber",
-        :outlinesubject => "extend.OutlineSubject"
       }
 
+    #custom field
+    project.all_issue_custom_fields.each do |cfield|
+      columnbymethod[cfield.name.to_sym] = cfield.name
+    end
+
+    #calc field
+    columnbymethod[:actual_time] = "calc.ActualTime"
+    columnbymethod[:actual_first_date] = "calc.ActualFirstDate"
+    columnbymethod[:actual_last_date] = "calc.ActualLastDate"
+    columnbymethod[:actual_progress] = "calc.ActualProgress"
+    columnbymethod[:days_early] = "calc.DaysEarly"
+    columnbymethod[:days_delay] = "calc.DaysDelay"
+    columnbymethod[:count_total_issue] = "calc.CountTotalIssue"
+    columnbymethod[:count_closed_issue] = "calc.CountClosedIssue"
+    columnbymethod[:days_max_early] = "calc.DaysMaxEarly"
+    columnbymethod[:days_max_delay] = "calc.DaysMaxDelay"
+    columnbymethod[:isScheduled] = "calc.isScheduled"
+
+    #extend field
+    columnbymethod[:children_count] = "extend.ChildrenCount"
+    columnbymethod[:outlinelevel] = "extend.OutlineLevel"
+    columnbymethod[:outlinenumber] = "extend.OutlineNumber"
+    columnbymethod[:outlinesubject] = "extend.OutlineSubject"
+    
     #csv buffer clear
     csvdata = ""
     
