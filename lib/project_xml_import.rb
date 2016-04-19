@@ -217,7 +217,7 @@ private
         update_custom_fields(issue, @required_custom_fields)
 
         # set custom field
-        if task.redmine_custom_field.length
+        if !task.redmine_custom_field.nil? && task.redmine_custom_field.length > 0
           task.redmine_custom_field.each_with_index do |value,index|
             custom_field_name = custom_field_names[index]
             if !custom_field_name.blank?
