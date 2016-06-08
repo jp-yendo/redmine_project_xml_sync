@@ -67,7 +67,9 @@ private
 
     #custom field
     project.all_issue_custom_fields.each do |custom_field|
-      columnbymethod[custom_field.name.to_sym] = "custom." + custom_field.name
+      if !custom_field.name.blank?
+        columnbymethod[custom_field.name.to_sym] = "custom." + custom_field.name
+      end
     end
 
     #calc field
