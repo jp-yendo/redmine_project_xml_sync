@@ -1,7 +1,15 @@
-<p>
-<%= form_tag({:action => 'analyze', :id => @project, :upload_path => @upload_path, :do_import => 'true'}, :multipart => true) do %>
-<%= submit_tag l(:button_import)%>
-</p>
+  <fieldset class="box">
+    <legend><%= l(:label_import_rule) %></legend>
+    <label>
+      <%= l(:label_default_tracker) %>
+      <%= select_tag "default_tracker",
+        options_from_collection_for_select(@project.trackers, 'id', 'name', Setting.plugin_redmine_project_xml_sync[:import][:tracker_id]) %>
+    </label>
+  </fieldset>
+  <p>
+  <%= form_tag({:action => 'analyze', :id => @project, :upload_path => @upload_path, :do_import => 'true'}, :multipart => true) do %>
+  <%= submit_tag l(:button_import)%>
+  </p>
 
   <h2>Project Import Details for <%= @project.name %></h2>
   <p>

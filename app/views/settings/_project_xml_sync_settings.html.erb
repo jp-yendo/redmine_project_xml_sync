@@ -1,6 +1,6 @@
 <%= content_tag :p do %>
   <%= content_tag :label, "region" %>
-  <%= select_tag('settings[region]', options_for_select(Holidays.regions, @settings['region'])) %>
+  <%= select_tag('settings[region]', options_for_select(Holidays.available_regions, @settings[:region])) %>
 <% end %>
 <%= content_tag :p do %>
   <%= content_tag :label, t('.tracker_alias') %>

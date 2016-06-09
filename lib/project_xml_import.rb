@@ -10,8 +10,9 @@ class ProjectXmlImport
     return @title, @usermapping, @assignments, @tasks
   end
 
-  def self.import(project, upload_path)
+  def self.import(project, upload_path, default_tracker)
     initValues(project, upload_path)
+    @default_tracker = default_tracker
     analyze_xml
     insert
     return @title, @usermapping, @assignments, @tasks, @root_ids
@@ -29,6 +30,8 @@ private
     @settings = Setting.plugin_redmine_project_xml_sync
     @settings_import = @settings[:import]
     @ignore_fields = @settings_import[:ignore_fields].select { |attr, val| val == '1' }.keys
+
+    @default_tracker = @settings[:import][:tracker_id]
 
     @resources = []
     @required_custom_fields = []
@@ -147,7 +150,7 @@ private
           issue.tracker = Tracker.find_by_name(task.tracker)
           if issue.tracker.nil? then raise ActiveRecord::RecordNotFound, "No tracker named #{task.tracker}" end
         else          
-          issue.tracker_id = @settings_import[:tracker_id]
+          issue.tracker_id = @default_tracker
         end
         unless task.redmine_status.nil? || task.redmine_status.blank?
           issue.status = IssueStatus.find_by_name(task.redmine_status)

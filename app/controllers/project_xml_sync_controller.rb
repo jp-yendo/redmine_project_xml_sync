@@ -28,7 +28,7 @@ class ProjectXmlSyncController < ApplicationController
     if do_import == 'true'
       @upload_path = params[:upload_path]
       Rails.logger.info "start import from #{@upload_path}"
-      @title, @usermapping, @assignments, @tasks, root_ids = ProjectXmlImport.import(@project, @upload_path)
+      @title, @usermapping, @assignments, @tasks, root_ids = ProjectXmlImport.import(@project, @upload_path, params[:default_tracker])
       unless ProjectXmlImport.message[:error].present?
         redirect_to :action => 'import_results', :id => @project, :root_ids => root_ids
       end
