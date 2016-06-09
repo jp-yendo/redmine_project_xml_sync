@@ -38,12 +38,11 @@ module ProjectXmlSyncHelper
     task = ProjectTask.new
     task.task_id = tasks.elements['ID'].text.to_i
     task.wbs = tasks.elements['WBS'].text
-#      task.outline_number = tasks.elements['OutlineNumber'].text
     task.outline_level = tasks.elements['OutlineLevel'].text.to_i
 
     name = tasks.elements['Name']
     task.name = name.text if name
-    date = Date.new
+
     start_date = tasks.elements['Start']
     task.start_date = start_date.text.split('T')[0] if start_date
 
@@ -51,13 +50,17 @@ module ProjectXmlSyncHelper
     task.finish_date = finish_date.text.split('T')[0] if finish_date
 
     create_date = tasks.elements['CreateDate']
-    date_time = create_date.text.split('T')
-    task.create_date = date_time[0] + ' ' + date_time[1] if start_date
+    unless create_date.nil?
+      date_time = create_date.text.split('T')
+      task.create_date = date_time[0] + ' ' + date_time[1]
+    end
+
     duration_arr = tasks.elements["Duration"].text.split("H")
     task.duration = duration_arr[0][2..duration_arr[0].size-1]         
+
     task.done_ratio = tasks.elements["PercentComplete"].text if tasks.elements["PercentComplete"]
-    task.outline_level = tasks.elements["OutlineLevel"].text.to_i  
-    priority = tasks.elements["Priority"].text
+
+    priority = tasks.elements["Priority"].text if tasks.elements["Priority"]
     if priority.nil? || priority == ""
       task.priority_id = 2  #normal
     else

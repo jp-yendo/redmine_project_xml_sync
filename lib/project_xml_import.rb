@@ -57,6 +57,7 @@ private
 
     prefix = "Project Xml Sync(#{Date.today}): "
 
+Rails.logger.info("Start parse project")
     doc.elements.each('Project') do |ele|
       tmp_title = ele.elements['Title'].text if ele.elements['Title']
       if tmp_title.nil?
@@ -66,12 +67,15 @@ private
         @title = prefix + tmp_title
       end
 
+Rails.logger.info("Start parse Resource")
       ele.each_element('//Resource') do |child|
         if child.elements["UID"] && child.elements["UID"].text.to_i > 0
           @resources.push(xml_resources child)
         end
       end
+Rails.logger.info("End parse Resource")
 
+Rails.logger.info("Start parse Assigment")
       resource_uids = []
       ele.each_element('//Assignment') do |child|
         assign = ProjectAssignment.new(child)
@@ -80,7 +84,9 @@ private
           @assignments.push(assign)
         end
       end
+Rails.logger.info("End parse Assigment")
 
+Rails.logger.info("Start mapping resource")
       member_uids = @project.members.map { |x| x.user_id}
 
       resource_uids.uniq.each do |resource_uid|
@@ -98,7 +104,9 @@ private
           @message[:warning] = "Error: #{no_mapping_found} Users missing or not in project! Please resolve manually."
         end
       end
+Rails.logger.info("End mapping resource")
 
+Rails.logger.info("Start check custom field")
       # check for required custom_fields
       @project.all_issue_custom_fields.each do |custom_field|
         if custom_field.is_required
@@ -106,10 +114,13 @@ private
           @required_custom_fields.push([custom_field.name,'n.a.'])
         end
       end
+Rails.logger.info("End check custom field")
 
+Rails.logger.info("Start parse Task")
       ele.each_element('//Task') do |child|
         @tasks.push(xml_tasks child)
       end
+Rails.logger.info("End parse Task")
     end
 
     @message[:notice] = "Project successful parsed" if @message.empty?
