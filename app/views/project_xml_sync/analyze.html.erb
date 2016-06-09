@@ -1,3 +1,4 @@
+<%= form_tag({:action => 'analyze', :id => @project, :upload_path => @upload_path, :do_import => 'true'}, :multipart => true) do %>
   <fieldset class="box">
     <legend><%= l(:label_import_rule) %></legend>
     <label>
@@ -7,48 +8,47 @@
     </label>
   </fieldset>
   <p>
-  <%= form_tag({:action => 'analyze', :id => @project, :upload_path => @upload_path, :do_import => 'true'}, :multipart => true) do %>
   <%= submit_tag l(:button_import)%>
   </p>
-
-  <h2>Project Import Details for <%= @project.name %></h2>
-  <p>
-  <b><%= l(:project_title)%>:</b> <%= @title %>
-  </p>
-
-  <p>
-  <h3>User Mapping</h3>
-  <% @usermapping.each do |user| %>
-    Resource_ID: <%= user[0]%> Original Name: <%= user[1]%> Map to: <%= user[2]%><br>
-  <% end %>
-  </p>
-
-  <p>
-  <h3><%= l(:assignment_tag)%></h3>
-  <table>
-    <tr>
-      <th><%= l(:task_tag)%></th>
-      <th><%= l(:xml_assignment)%></th>
-      <th><%= l(:assignedto_auto)%></th>
-      <th>Info</th>
-    </tr>
-    <% 
-    @assignments.each do |assign|
-      task = @tasks.select { |task| task.task_id == assign.task_uid}
-      assigned_to = @usermapping.select {|id, user| id == assign.resource_uid}[0]
-      unless task.nil? || assigned_to.nil?
-    %>
-        <tr>
-          <td><%= task[0].name unless task[0].nil? %></td>
-          <td><%= assigned_to[1] %></td>
-          <td><%= assigned_to[2].name if assigned_to[3] <= 2 %></td>
-         <td><%= I18n.t('user_imp_status_' + assigned_to[3].to_s)%></td>
-        </tr>	
-      <% end %>
-    <% end %>
-  </table>
-  </p>
 <% end %>
+
+<h2>Project Import Details for <%= @project.name %></h2>
+<p>
+<b><%= l(:project_title)%>:</b> <%= @title %>
+</p>
+
+<p>
+<h3>User Mapping</h3>
+<% @usermapping.each do |user| %>
+  Resource_ID: <%= user[0]%> Original Name: <%= user[1]%> Map to: <%= user[2]%><br>
+<% end %>
+</p>
+
+<p>
+<h3><%= l(:assignment_tag)%></h3>
+<table>
+  <tr>
+    <th><%= l(:task_tag)%></th>
+    <th><%= l(:xml_assignment)%></th>
+    <th><%= l(:assignedto_auto)%></th>
+    <th>Info</th>
+  </tr>
+  <% 
+  @assignments.each do |assign|
+    task = @tasks.select { |task| task.task_id == assign.task_uid}
+    assigned_to = @usermapping.select {|id, user| id == assign.resource_uid}[0]
+    unless task.nil? || assigned_to.nil?
+  %>
+      <tr>
+        <td><%= task[0].name unless task[0].nil? %></td>
+        <td><%= assigned_to[1] %></td>
+        <td><%= assigned_to[2].name if assigned_to[3] <= 2 %></td>
+       <td><%= I18n.t('user_imp_status_' + assigned_to[3].to_s)%></td>
+      </tr>	
+    <% end %>
+  <% end %>
+</table>
+</p>
 
 <p>
 <h3><%= l(:task_tag)%></h3>
