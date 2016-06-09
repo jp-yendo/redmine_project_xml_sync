@@ -79,22 +79,24 @@ module ProjectXmlSyncHelper
     tasks.each_element("ExtendedAttribute") do |node|
       task.redmine_custom_field = []
 
-      case node.elements["FieldID"].text
-      when "188744000"
-        task.tracker = node.elements["Value"].text
-      when "188744001"
-        task.redmine_id = node.elements["Value"].text
-      when "188744002"
-        task.redmine_status = node.elements["Value"].text
-      when "188744003"
-        task.redmine_version = node.elements["Value"].text
-      when "188744004"
-        task.redmine_category = node.elements["Value"].text
-      when "188744007","188744008","188744009","188744010","188744011","188744012","188744013","188744014","188744015","188744016"
-        idnum = node.elements["FieldID"].text.to_i
-        index = idnum - 188744007
-        if index >= 0
-          task.redmine_custom_field[index] = node.elements["Value"].text
+      unless node.elements["Value"].nil?
+        case node.elements["FieldID"].text
+        when "188744000"
+          task.tracker = node.elements["Value"].text
+        when "188744001"
+          task.redmine_id = node.elements["Value"].text
+        when "188744002"
+          task.redmine_status = node.elements["Value"].text
+        when "188744003"
+          task.redmine_version = node.elements["Value"].text
+        when "188744004"
+          task.redmine_category = node.elements["Value"].text
+        when "188744007","188744008","188744009","188744010","188744011","188744012","188744013","188744014","188744015","188744016"
+          idnum = node.elements["FieldID"].text.to_i
+          index = idnum - 188744007
+          if index >= 0
+            task.redmine_custom_field[index] = node.elements["Value"].text
+          end
         end
       end
     end
