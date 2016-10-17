@@ -36,9 +36,9 @@ module ProjectXmlSyncHelper
 
   def xml_tasks tasks
     task = ProjectTask.new
-    task.task_id = tasks.elements['ID'].text.to_i
-    task.wbs = tasks.elements['WBS'].text
-    task.outline_level = tasks.elements['OutlineLevel'].text.to_i
+    task.task_id = tasks.elements['UID'].text.to_i if tasks.elements['UID']
+    task.wbs = tasks.elements['WBS'].text if tasks.elements['WBS']
+    task.outline_level = tasks.elements['OutlineLevel'].text.to_i if tasks.elements['OutlineLevel']
 
     name = tasks.elements['Name']
     task.name = name.text if name
@@ -50,15 +50,14 @@ module ProjectXmlSyncHelper
     task.finish_date = finish_date.text.split('T')[0] if finish_date
 
     create_date = tasks.elements['CreateDate']
-    unless create_date.nil?
-      date_time = create_date.text.split('T')
-      task.create_date = date_time[0] + ' ' + date_time[1]
-    end
+    date_time = create_date.text.split('T') if create_date
+    task.create_date = date_time[0] + ' ' + date_time[1] if date_time
 
-    duration_arr = tasks.elements["Duration"].text.split("H")
-    task.duration = duration_arr[0][2..duration_arr[0].size-1]         
+    duration_arr = tasks.elements["Duration"].text.split("H") if tasks.elements['Duration']
+    task.duration = duration_arr[0][2..duration_arr[0].size-1] if duration_arr       
 
     task.done_ratio = tasks.elements["PercentComplete"].text if tasks.elements["PercentComplete"]
+	task.outline_level = tasks.elements["OutlineLevel"].text.to_i if tasks.elements['OutlineLevel']
 
     priority = tasks.elements["Priority"].text if tasks.elements["Priority"]
     if priority.nil? || priority == ""
